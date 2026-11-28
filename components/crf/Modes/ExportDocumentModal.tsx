@@ -282,22 +282,22 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
       onClose={handleClose}
       titleId="export-modal-title"
       maxWidth="max-w-3xl"
-      className="bg-zinc-900 border-zinc-750"
+      className="studio-surface-elevated studio-border-default studio-fg-primary"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950">
+      <div className="flex items-center justify-between px-6 py-4 border-b studio-border-default studio-surface-subtle">
         <div className="flex items-center gap-3">
-          <span className="p-2 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">
+          <span className="p-2 rounded-xl studio-accent-cyan border">
             <IconFileSpreadsheet className="w-5 h-5" />
           </span>
           <div>
             <h2
               id="export-modal-title"
-              className="text-base font-bold text-white font-mono uppercase tracking-wide"
+              className="text-base font-bold studio-fg-primary font-mono uppercase tracking-wide"
             >
               Clinical Word (.docx) &amp; PDF Exporter
             </h2>
-            <p className="text-xs text-zinc-400 font-sans">
+            <p className="text-xs studio-fg-muted font-sans">
               Export clinical worksheets and regulatory submission aCRFs with
               your organization&apos;s custom branding.
             </p>
@@ -306,7 +306,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
         <button
           onClick={handleClose}
           aria-label="Close export modal"
-          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          className="p-1.5 rounded-lg studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
         >
           <IconX className="w-5 h-5" />
         </button>
@@ -318,10 +318,10 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
         {exportError && (
           <div
             role="alert"
-            className="p-3.5 rounded-xl bg-red-950/50 border border-red-800/60 text-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono"
+            className="p-3.5 rounded-xl studio-accent-red-strong border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono"
           >
             <div className="flex items-center gap-2.5">
-              <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <IconAlertTriangle className="w-4 h-4 studio-fg-red shrink-0" />
               <span>{exportError.message}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
@@ -335,7 +335,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
                   }
                 }}
                 disabled={isBusy}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800/80 border border-red-700/60 text-red-100 font-mono text-xs font-bold transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg studio-accent-red-strong studio-hover-bg-red border font-mono text-xs font-bold transition-colors disabled:opacity-50"
               >
                 <IconRefresh className="w-3.5 h-3.5" />
                 <span>Retry</span>
@@ -347,7 +347,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
                   clearSuccessTimer();
                   dispatch({ type: "CLEAR_ERROR" });
                 }}
-                className="p-1 rounded-lg text-red-400 hover:text-red-200 hover:bg-red-900/40 transition-colors"
+                className="p-1 rounded-lg studio-fg-red studio-hover-fg-red studio-hover-bg-red transition-colors"
               >
                 <IconX className="w-4 h-4" />
               </button>
@@ -356,23 +356,23 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
         )}
 
         {/* Active Branding Strip */}
-        <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl studio-surface-subtle border studio-border-default flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className="w-3.5 h-3.5 rounded-full ring-2 ring-zinc-700"
+              className="w-3.5 h-3.5 rounded-full ring-2 studio-ring-default"
               style={{ backgroundColor: branding.primaryColor }}
             />
             <div>
-              <div className="text-xs font-bold text-white font-mono">
+              <div className="text-xs font-bold studio-fg-primary font-mono">
                 {branding.organizationName}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-[10px] studio-fg-muted">
                 Primary:{" "}
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono studio-fg-secondary">
                   {branding.primaryColor}
                 </span>{" "}
                 • Logo:{" "}
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono studio-fg-secondary">
                   {branding.logoBase64 ? "Custom Uploaded" : "Default"}
                 </span>
               </div>
@@ -381,7 +381,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           <button
             type="button"
             onClick={onOpenBranding}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-brand-cyan text-xs font-mono transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg studio-surface-muted studio-hover-active border studio-border-strong studio-fg-cyan text-xs font-mono transition-colors"
           >
             <IconPalette className="w-3.5 h-3.5" />
             <span>Customize Branding</span>
@@ -390,7 +390,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
         {/* 1. Document Mode Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+          <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
             1. Document Mode
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -399,15 +399,15 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               onClick={() => setExportMode("blank")}
               className={`p-3.5 rounded-xl border text-left transition-all ${
                 exportMode === "blank"
-                  ? "bg-brand-cyan/10 border-brand-cyan text-white shadow-sm"
-                  : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  ? "studio-bg-cyan studio-border-cyan studio-fg-primary shadow-sm"
+                  : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
               }`}
             >
-              <div className="flex items-center gap-2 font-mono text-xs font-bold text-white mb-1">
-                <IconFileText className="w-4 h-4 text-brand-cyan" />
+              <div className="flex items-center gap-2 font-mono text-xs font-bold studio-fg-primary mb-1">
+                <IconFileText className="w-4 h-4 studio-fg-cyan" />
                 <span>Blank Data Collection Forms</span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-sans">
+              <p className="text-[11px] studio-fg-muted font-sans">
                 Clean worksheets for clinical site investigators, subject source
                 records, and paper-entry backup.
               </p>
@@ -418,15 +418,15 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               onClick={() => setExportMode("annotated")}
               className={`p-3.5 rounded-xl border text-left transition-all ${
                 exportMode === "annotated"
-                  ? "bg-brand-cyan/10 border-brand-cyan text-white shadow-sm"
-                  : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  ? "studio-bg-cyan studio-border-cyan studio-fg-primary shadow-sm"
+                  : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
               }`}
             >
-              <div className="flex items-center gap-2 font-mono text-xs font-bold text-white mb-1">
-                <IconBook className="w-4 h-4 text-purple-400" />
+              <div className="flex items-center gap-2 font-mono text-xs font-bold studio-fg-primary mb-1">
+                <IconBook className="w-4 h-4 studio-fg-purple" />
                 <span>Annotated Submission aCRF</span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-sans">
+              <p className="text-[11px] studio-fg-muted font-sans">
                 CDISC {standardCitation("SDTMIG")} /{" "}
                 {standardCitation("CDASHIG")} variable tags, origin badges, and
                 regulatory submission metadata.
@@ -437,7 +437,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
         {/* 2. Export Scope Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+          <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
             2. Export Scope
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -446,8 +446,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               onClick={() => setScope("all")}
               className={`px-3 py-2 rounded-xl border text-xs font-mono transition-all ${
                 scope === "all"
-                  ? "bg-zinc-800 border-brand-cyan text-brand-cyan font-bold"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-border-cyan studio-fg-cyan font-bold"
+                  : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               Entire Study Book ({study.forms.length} Forms)
@@ -458,8 +458,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               onClick={() => setScope("single")}
               className={`px-3 py-2 rounded-xl border text-xs font-mono transition-all ${
                 scope === "single"
-                  ? "bg-zinc-800 border-brand-cyan text-brand-cyan font-bold"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-border-cyan studio-fg-cyan font-bold"
+                  : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               Active Form Only ([{activeForm?.domain}])
@@ -470,8 +470,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
               onClick={() => setScope("selected")}
               className={`px-3 py-2 rounded-xl border text-xs font-mono transition-all ${
                 scope === "selected"
-                  ? "bg-zinc-800 border-brand-cyan text-brand-cyan font-bold"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-border-cyan studio-fg-cyan font-bold"
+                  : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               Custom Multi-Form ({selectedFormIds.length})
@@ -480,17 +480,17 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
           {/* Custom Multi-Form Checkbox Matrix */}
           {scope === "selected" && (
-            <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
+            <div className="p-3 studio-surface-subtle border studio-border-default rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
               {study.forms.map((f) => (
                 <label
                   key={f.id}
-                  className="flex items-center gap-2 text-xs font-mono text-zinc-300 cursor-pointer hover:text-white"
+                  className="flex items-center gap-2 text-xs font-mono studio-fg-secondary cursor-pointer studio-hover-fg-primary"
                 >
                   <input
                     type="checkbox"
                     checked={selectedFormIds.includes(f.id)}
                     onChange={() => handleToggleForm(f.id)}
-                    className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+                    className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0"
                   />
                   <span className="truncate">
                     [{f.domain}] {f.name}
@@ -503,27 +503,27 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
         {/* 3. Document Sections & Options */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-300 font-mono uppercase flex items-center gap-1">
-            <IconListCheck className="w-3.5 h-3.5 text-brand-cyan" />
+          <label className="text-xs font-bold studio-fg-secondary font-mono uppercase flex items-center gap-1">
+            <IconListCheck className="w-3.5 h-3.5 studio-fg-cyan" />
             <span>3. Document Structure &amp; Appendices</span>
           </label>
-          <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl space-y-2.5">
-            <label className="flex items-center gap-2.5 text-xs font-mono text-zinc-300 cursor-pointer">
+          <div className="p-3.5 studio-surface-subtle border studio-border-default rounded-xl space-y-2.5">
+            <label className="flex items-center gap-2.5 text-xs font-mono studio-fg-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeTableOfContents}
                 onChange={(e) => setIncludeTableOfContents(e.target.checked)}
-                className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+                className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0"
               />
               <span>Include Table of Contents &amp; SDTM Domain Index</span>
             </label>
 
-            <label className="flex items-center gap-2.5 text-xs font-mono text-zinc-300 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-xs font-mono studio-fg-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeSdtmAppendix}
                 onChange={(e) => setIncludeSdtmAppendix(e.target.checked)}
-                className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+                className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0"
               />
               <span>
                 Include SDTM Target Variable Mapping Matrix (Appendix)
@@ -534,13 +534,13 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-zinc-800 bg-zinc-950">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t studio-border-default studio-surface-subtle">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handlePrint}
             disabled={isBusy}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-mono text-xs transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl studio-surface-muted studio-hover-active border studio-border-strong studio-fg-primary font-mono text-xs transition-colors disabled:opacity-50"
           >
             <IconPrinter className="w-4 h-4" />
             <span>Print / Preview</span>
@@ -553,12 +553,12 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             type="button"
             onClick={handleDownloadDocx}
             disabled={isBusy}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl studio-btn-sky font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
           >
             {isExportingDocx ? (
               <IconLoader2 className="w-4 h-4 animate-spin" />
             ) : docxSuccess ? (
-              <IconCheck className="w-4 h-4 text-emerald-300" />
+              <IconCheck className="w-4 h-4" />
             ) : (
               <IconDownload className="w-4 h-4" />
             )}
@@ -574,12 +574,12 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             type="button"
             onClick={handleDownloadPdf}
             disabled={isBusy}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-md disabled:opacity-50"
           >
             {isExportingPdf ? (
               <IconLoader2 className="w-4 h-4 animate-spin" />
             ) : pdfSuccess ? (
-              <IconCheck className="w-4 h-4 text-emerald-900" />
+              <IconCheck className="w-4 h-4" />
             ) : (
               <IconDownload className="w-4 h-4" />
             )}
@@ -594,7 +594,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => recordEvent("crf", "project_click")}
-            className="inline-flex items-center gap-1.5 px-2 py-2 text-zinc-400 hover:text-white font-mono text-xs underline decoration-zinc-600 underline-offset-4 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2 py-2 studio-fg-muted studio-hover-fg-primary font-mono text-xs underline decoration-current underline-offset-4 transition-colors"
           >
             <IconCalendar className="w-4 h-4" />
             <span>Schedule Consultation</span>

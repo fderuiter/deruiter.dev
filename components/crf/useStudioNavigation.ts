@@ -123,11 +123,7 @@ export function useStudioNavigation(study: StudyProtocol) {
   // Synchronize incoming hash state on mount or browser Back/Forward navigation
   useEffect(() => {
     const targetMode = (params.mode as StudioMode | undefined) || "designer";
-    if (
-      ["designer", "matrix", "rules", "edc", "acrf", "export"].includes(
-        targetMode
-      )
-    ) {
+    if (STARTUP_MODES.includes(targetMode)) {
       if (targetMode !== activeMode) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveModeState(targetMode);
@@ -159,10 +155,7 @@ export function useStudioNavigation(study: StudyProtocol) {
     }
 
     const targetTab = (params.tab as LeftSidebarTab | undefined) || "spine";
-    if (
-      ["spine", "forms", "palette"].includes(targetTab) &&
-      targetTab !== leftTab
-    ) {
+    if (LEFT_SIDEBAR_TABS.includes(targetTab) && targetTab !== leftTab) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLeftTabState(targetTab);
     }

@@ -117,7 +117,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 studio-surface-scrim"
       onClick={onCancel}
     >
       <div
@@ -127,24 +127,24 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
         aria-labelledby={titleId}
         aria-describedby={descId}
         data-testid="form-variant-dialog"
-        className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4"
+        className="w-full max-w-lg max-h-[90dvh] overflow-y-auto studio-surface-elevated border studio-border-default rounded-2xl p-5 shadow-2xl space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1 min-w-0">
             <h3
               id={titleId}
-              className="text-sm font-bold font-mono text-white flex items-center gap-1.5"
+              className="text-sm font-bold font-mono studio-fg-primary flex items-center gap-1.5"
             >
               <IconGitFork
-                className="w-4 h-4 text-amber-400 shrink-0"
+                className="w-4 h-4 studio-fg-amber shrink-0"
                 aria-hidden="true"
               />
               <span className="truncate">Visit uses of {form.name}</span>
             </h3>
             <p
               id={descId}
-              className="text-xs text-zinc-300 leading-relaxed break-words"
+              className="text-xs studio-fg-secondary leading-relaxed break-words"
             >
               {form.name} is one shared definition used in {uses.length}{" "}
               {uses.length === 1 ? "place" : "places"}. Ordinary edits to this
@@ -157,7 +157,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
+            className="p-1 rounded studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors shrink-0"
             aria-label="Close without changes"
           >
             <IconX className="w-4 h-4" />
@@ -165,31 +165,31 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
         </div>
 
         {uses.length === 0 ? (
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs studio-fg-muted">
             This form is not assigned to any visit, so there is nothing to
             split. Assign it in the Study Spine or the Visit Matrix first.
           </p>
         ) : (
           <>
             <div className="space-y-2">
-              <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
+              <p className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold">
                 Choose the uses that move to the variant
               </p>
               {groups.map((group) => (
                 <fieldset
                   key={group.visitId}
-                  className="rounded-xl border border-zinc-800 bg-zinc-950 p-2.5 space-y-1.5 min-w-0"
+                  className="rounded-xl border studio-border-default studio-surface-subtle p-2.5 space-y-1.5 min-w-0"
                 >
-                  <legend className="px-1 text-xs font-mono font-bold text-zinc-200">
+                  <legend className="px-1 text-xs font-mono font-bold studio-fg-primary">
                     {group.visitName}{" "}
-                    <span className="text-zinc-500 font-normal">
+                    <span className="studio-fg-muted font-normal">
                       Day {group.targetDay}
                     </span>
                   </legend>
                   {group.uses.map((use) => (
                     <label
                       key={use.key}
-                      className={`flex items-center gap-2 text-xs text-zinc-300 min-w-0 cursor-pointer ${
+                      className={`flex items-center gap-2 text-xs studio-fg-secondary min-w-0 cursor-pointer ${
                         use.kind === "visit_default" ? "" : "pl-4"
                       }`}
                     >
@@ -211,7 +211,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
             <div className="space-y-1">
               <label
                 htmlFor={nameId}
-                className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold"
+                className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold"
               >
                 Variant name
               </label>
@@ -220,27 +220,27 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
                 type="text"
                 value={variantName}
                 onChange={(e) => setVariantName(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                className="w-full px-2.5 py-1.5 rounded-lg studio-surface-subtle border studio-border-default text-xs font-mono studio-fg-primary focus:outline-none studio-hover-border-amber"
               />
             </div>
 
             <section
               aria-labelledby={`${titleId}-preview`}
-              className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 space-y-2"
+              className="rounded-xl border studio-border-default studio-surface-subtle p-3 space-y-2"
             >
               <h4
                 id={`${titleId}-preview`}
-                className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold"
+                className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold"
               >
                 Preview
               </h4>
               <p
-                className="text-xs text-zinc-300"
+                className="text-xs studio-fg-secondary"
                 aria-live="polite"
                 data-testid="form-variant-summary"
               >
                 {preview.movedCount} of {uses.length} uses move to{" "}
-                <span className="font-mono text-amber-400">
+                <span className="font-mono studio-fg-amber">
                   {preview.variantName || "the variant"}
                 </span>
                 ; {preview.remainingCount} stay on {form.name}.
@@ -250,14 +250,14 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
                   {visibleChanges.map((change) => (
                     <li
                       key={change.use.key}
-                      className="text-xs font-mono text-zinc-300 flex flex-wrap items-center gap-x-1.5 min-w-0"
+                      className="text-xs font-mono studio-fg-secondary flex flex-wrap items-center gap-x-1.5 min-w-0"
                     >
                       <span
                         aria-hidden="true"
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                           change.outcome === "moves_to_variant"
-                            ? "bg-amber-400"
-                            : "bg-emerald-400"
+                            ? "studio-dot-amber"
+                            : "studio-dot-emerald"
                         }`}
                       />
                       <span className="min-w-0 break-words">
@@ -266,7 +266,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
                           ? `moves to ${preview.variantName || "the variant"}`
                           : `stays on ${form.name}`}
                         {change.createsArmAssignment && (
-                          <span className="text-zinc-500">
+                          <span className="studio-fg-muted">
                             {" "}
                             (new arm-specific assignment)
                           </span>
@@ -278,7 +278,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
               )}
               {preview.error && showError && (
                 <p
-                  className="text-xs text-amber-400"
+                  className="text-xs studio-fg-amber"
                   data-testid="form-variant-error"
                 >
                   {preview.error}
@@ -292,7 +292,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono text-zinc-300 transition-colors active:scale-[0.98]"
+            className="px-3 py-1.5 rounded-lg studio-surface-muted studio-hover-active text-xs font-mono studio-fg-secondary transition-colors active:scale-[0.98]"
           >
             Cancel
           </button>
@@ -300,7 +300,7 @@ export const FormVariantModal: React.FC<FormVariantModalProps> = ({
             type="button"
             onClick={handleCreate}
             disabled={Boolean(preview.error)}
-            className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-mono font-bold text-black transition-colors active:scale-[0.98]"
+            className="px-3.5 py-1.5 rounded-lg studio-btn-amber disabled:opacity-40 disabled:cursor-not-allowed text-xs font-mono font-bold transition-colors active:scale-[0.98]"
           >
             Create variant
           </button>

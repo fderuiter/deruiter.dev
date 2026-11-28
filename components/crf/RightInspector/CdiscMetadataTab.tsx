@@ -48,20 +48,20 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
   return (
     <div className="space-y-4 p-4 text-xs font-sans">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-mono uppercase text-zinc-400 font-semibold flex items-center gap-1.5">
-          <IconDatabase className="w-3.5 h-3.5 text-brand-cyan" />
+        <span className="text-[11px] font-mono uppercase studio-fg-muted font-semibold flex items-center gap-1.5">
+          <IconDatabase className="w-3.5 h-3.5 studio-fg-cyan" />
           {standardCitation("CDASHIG")} / SDTM Mapping
         </span>
-        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan">
+        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded studio-surface-card border studio-border-default studio-fg-cyan">
           Domain: {form.domain}
         </span>
       </div>
 
       {/* Suggested CDASH Standards for this domain */}
       {domainStandards.length > 0 && (
-        <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800 space-y-2">
-          <div className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
-            <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
+        <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default space-y-2">
+          <div className="text-[10px] font-mono studio-fg-muted flex items-center gap-1">
+            <IconSparkles className="w-3.5 h-3.5 studio-fg-cyan" />
             <span>Match CDASH Standard Variable:</span>
           </div>
           <div className="flex flex-wrap gap-1">
@@ -69,7 +69,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
               <TooltipButton
                 key={std.sdtmVariable}
                 onClick={() => handleAutoMapStandard(std)}
-                className="px-2 py-1 rounded bg-zinc-900 hover:bg-brand-cyan/20 border border-zinc-800 text-[10px] font-mono text-zinc-300 hover:text-brand-cyan transition-colors"
+                className="px-2 py-1 rounded studio-surface-card studio-hover-bg-cyan border studio-border-default text-[10px] font-mono studio-fg-secondary studio-hover-fg-cyan transition-colors"
                 tooltip={`${std.cdashLabel} (${std.core})`}
               >
                 {std.sdtmVariable}
@@ -82,7 +82,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
       {/* SDTM Domain & Variable */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             SDTM Target Domain
           </label>
           <input
@@ -91,12 +91,12 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             onChange={(e) =>
               handleUpdateCdash({ domain: e.target.value.toUpperCase() })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-mono uppercase studio-focus-input focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             SDTM Variable
           </label>
           <input
@@ -105,7 +105,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             onChange={(e) =>
               handleUpdateCdash({ sdtmVariable: e.target.value.toUpperCase() })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-mono uppercase studio-focus-input focus:outline-none"
           />
         </div>
       </div>
@@ -113,7 +113,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
       {/* CDASH Core Level & NCI Concept */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             CDASH Core Requirement
           </label>
           <select
@@ -123,7 +123,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
                 core: e.target.value as CdashVariableMetadata["core"],
               })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none"
           >
             <option value="R">R - Required</option>
             <option value="HR">HR - Highly Recommended</option>
@@ -132,7 +132,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+          <label className="block text-[11px] font-mono studio-fg-muted mb-1">
             NCI Concept ID
           </label>
           <input
@@ -141,7 +141,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
             onChange={(e) =>
               handleUpdateCdash({ nciConceptId: e.target.value })
             }
-            className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
+            className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-primary font-mono studio-focus-input focus:outline-none"
             placeholder="e.g. C49487"
           />
         </div>
@@ -149,9 +149,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
 
       {/* Annotated CRF (aCRF) Submission Label */}
       <div>
-        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+        <label className="block text-[11px] font-mono studio-fg-muted mb-1">
           Annotated CRF (aCRF) Text Overlay{" "}
-          <span className="text-brand-cyan">*</span>
+          <span className="studio-fg-cyan">*</span>
         </label>
         <input
           type="text"
@@ -159,10 +159,10 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           onChange={(e) =>
             handleUpdateCdash({ acrfAnnotation: e.target.value })
           }
-          className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-brand-cyan font-mono text-xs focus:border-brand-cyan focus:outline-none"
+          className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg studio-fg-cyan font-mono text-xs studio-focus-input focus:outline-none"
           placeholder="e.g. AE.AESTDTC or VS.VSSTRESN [VSTESTCD=HEIGHT]"
         />
-        <p className="text-[10px] text-zinc-500 mt-1 font-sans">
+        <p className="text-[10px] studio-fg-muted mt-1 font-sans">
           This string renders directly on the visual Annotated CRF overlay for
           regulatory submission (FDA/PMDA).
         </p>

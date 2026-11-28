@@ -272,19 +272,19 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
     : [];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-3 sm:p-6 overflow-y-auto">
+    <div className="flex-1 flex flex-col h-full studio-surface-subtle p-3 sm:p-6 overflow-y-auto">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 mb-4 sm:mb-6 border-b border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 sm:pb-6 mb-4 sm:mb-6 border-b studio-border-default">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan shrink-0">
+            <span className="p-1.5 rounded-lg studio-accent-cyan border shrink-0">
               <IconCalendar className="w-5 h-5" />
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-white font-mono truncate">
+            <h2 className="text-base sm:text-lg font-bold studio-fg-primary font-mono truncate">
               Protocol Visit Schedule Matrix (Schedule of Assessments)
             </h2>
           </div>
-          <p className="text-xs text-zinc-400 font-sans mt-1">
+          <p className="text-xs studio-fg-muted font-sans mt-1">
             Map clinical forms to protocol visits, analyze real-time window
             conflicts, and review timeline bounds and milestone projections.
           </p>
@@ -296,28 +296,28 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
             onClick={() => setIsIntelligenceOpen(!isIntelligenceOpen)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all border ${
               isIntelligenceOpen
-                ? "bg-purple-500/20 border-purple-500 text-purple-300"
-                : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700"
+                ? "studio-accent-purple-strong"
+                : "studio-surface-card studio-border-default studio-fg-secondary studio-hover-border-strong"
             }`}
             tooltip="Toggle Schedule Intelligence & Forecasting Drawer"
           >
-            <IconChartBar className="w-4 h-4 text-purple-400" />
+            <IconChartBar className="w-4 h-4 studio-fg-purple" />
             <span>Schedule Intelligence</span>
             {conflictSummary.hasConflicts && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-extrabold">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full studio-btn-amber text-[10px] font-extrabold">
                 {conflictSummary.totalConflicts}
               </span>
             )}
           </TooltipButton>
 
           {/* Mobile/Tablet Format Switcher */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
+          <div className="flex items-center studio-surface-card border studio-border-default rounded-xl p-0.5">
             <TooltipButton
               onClick={() => setViewFormat("table")}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
                 viewFormat === "table"
-                  ? "bg-brand-cyan text-black font-bold"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
               tooltip="Full Matrix Table"
               aria-label="Full Matrix Table"
@@ -329,8 +329,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
               onClick={() => setViewFormat("cards")}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
                 viewFormat === "cards"
-                  ? "bg-brand-cyan text-black font-bold"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
               tooltip="Mobile Visit Cards View"
               aria-label="Mobile Visit Cards View"
@@ -342,7 +342,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
           <button
             onClick={handleAddVisit}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
           >
             <IconPlus className="w-4 h-4" />
             <span>Add Visit</span>
@@ -352,9 +352,9 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
       {/* Arm Selector Filter Bar */}
       {arms.length > 0 && (
-        <div className="mb-4 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <span className="font-bold text-brand-cyan">
+        <div className="mb-4 p-3 rounded-xl studio-surface-subtle border studio-border-default flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2 studio-fg-secondary">
+            <span className="font-bold studio-fg-cyan">
               Active Study Arm Scope:
             </span>
           </div>
@@ -363,8 +363,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
               onClick={() => setSelectedArmId("all")}
               className={`px-3 py-1 rounded-lg transition-all border ${
                 selectedArmId === "all"
-                  ? "bg-brand-cyan text-black font-bold border-brand-cyan"
-                  : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                  ? "studio-btn-cyan font-bold"
+                  : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
               }`}
             >
               All Arms (Combined Schedule)
@@ -375,8 +375,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 onClick={() => setSelectedArmId(arm.id)}
                 className={`px-3 py-1 rounded-lg transition-all border whitespace-nowrap ${
                   selectedArmId === arm.id
-                    ? "bg-brand-cyan text-black font-bold border-brand-cyan"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                    ? "studio-btn-cyan font-bold"
+                    : "studio-surface-subtle studio-fg-muted studio-border-default studio-hover-fg-primary"
                 }`}
               >
                 [{arm.type}] {arm.name}
@@ -388,17 +388,17 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
       {/* Schedule Intelligence Drawer / Panel */}
       {isIntelligenceOpen && (
-        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border border-purple-500/30 space-y-5 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl studio-surface-card border studio-border-purple space-y-5 shadow-2xl">
+          <div className="flex items-center justify-between border-b studio-border-default pb-3">
             <div className="flex items-center gap-2">
-              <IconChartBar className="w-5 h-5 text-purple-400" />
-              <h3 className="text-sm sm:text-base font-bold text-white font-mono">
+              <IconChartBar className="w-5 h-5 studio-fg-purple" />
+              <h3 className="text-sm sm:text-base font-bold studio-fg-primary font-mono">
                 Schedule Intelligence & Milestone Forecasting Engine
               </h3>
             </div>
             <TooltipButton
               onClick={() => setIsIntelligenceOpen(false)}
-              className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
+              className="p-1.5 rounded-lg studio-surface-muted studio-fg-muted studio-hover-fg-primary"
               tooltip="Close Drawer"
               aria-label="Close Drawer"
             >
@@ -408,25 +408,25 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
           {/* Key Metrics Overview Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-              <div className="text-[10px] font-mono uppercase text-zinc-400">
+            <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default">
+              <div className="text-[10px] font-mono uppercase studio-fg-muted">
                 Target Schedule Span
               </div>
-              <div className="text-base sm:text-lg font-bold text-white font-mono mt-1">
+              <div className="text-base sm:text-lg font-bold studio-fg-primary font-mono mt-1">
                 {scheduleBounds.targetDurationDays}{" "}
-                <span className="text-xs text-zinc-400">days</span>
+                <span className="text-xs studio-fg-muted">days</span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-              <div className="text-[10px] font-mono uppercase text-zinc-400">
+            <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default">
+              <div className="text-[10px] font-mono uppercase studio-fg-muted">
                 Max Expansion Bounds
               </div>
-              <div className="text-base sm:text-lg font-bold text-purple-300 font-mono mt-1">
+              <div className="text-base sm:text-lg font-bold studio-fg-purple font-mono mt-1">
                 {scheduleBounds.maxExpansionDays}{" "}
-                <span className="text-xs text-zinc-400">days</span>
+                <span className="text-xs studio-fg-muted">days</span>
               </div>
-              <div className="text-[10px] font-mono text-zinc-500">
+              <div className="text-[10px] font-mono studio-fg-muted">
                 +
                 {scheduleBounds.maxExpansionDays -
                   scheduleBounds.targetDurationDays}
@@ -434,15 +434,15 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-              <div className="text-[10px] font-mono uppercase text-zinc-400">
+            <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default">
+              <div className="text-[10px] font-mono uppercase studio-fg-muted">
                 Max Contraction Bounds
               </div>
-              <div className="text-base sm:text-lg font-bold text-brand-cyan font-mono mt-1">
+              <div className="text-base sm:text-lg font-bold studio-fg-cyan font-mono mt-1">
                 {scheduleBounds.maxContractionDays}{" "}
-                <span className="text-xs text-zinc-400">days</span>
+                <span className="text-xs studio-fg-muted">days</span>
               </div>
-              <div className="text-[10px] font-mono text-zinc-500">
+              <div className="text-[10px] font-mono studio-fg-muted">
                 -
                 {scheduleBounds.targetDurationDays -
                   scheduleBounds.maxContractionDays}
@@ -450,19 +450,19 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-              <div className="text-[10px] font-mono uppercase text-zinc-400">
+            <div className="p-3 rounded-xl studio-surface-subtle border studio-border-default">
+              <div className="text-[10px] font-mono uppercase studio-fg-muted">
                 Window Overlap Conflicts
               </div>
               <div
                 className={`text-base sm:text-lg font-bold font-mono mt-1 ${
                   conflictSummary.hasConflicts
-                    ? "text-amber-400"
-                    : "text-emerald-400"
+                    ? "studio-fg-amber"
+                    : "studio-fg-emerald"
                 }`}
               >
                 {conflictSummary.totalConflicts}{" "}
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs studio-fg-muted">
                   {conflictSummary.hasConflicts ? "detected" : "none"}
                 </span>
               </div>
@@ -471,8 +471,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
           {/* Window Conflicts List */}
           {conflictSummary.hasConflicts && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-              <div className="flex items-center gap-2 text-amber-400 font-mono font-bold text-xs">
+            <div className="p-3.5 rounded-xl studio-bg-amber border studio-border-amber space-y-2">
+              <div className="flex items-center gap-2 studio-fg-amber font-mono font-bold text-xs">
                 <IconAlertTriangle className="w-4 h-4 shrink-0" />
                 <span>
                   Detected Window Overlap Warnings (
@@ -483,7 +483,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 {conflictSummary.conflicts.map((conflict, idx) => (
                   <div
                     key={idx}
-                    className="p-2 rounded-lg bg-zinc-950/80 border border-amber-500/20 text-amber-200 flex flex-wrap items-center justify-between gap-2"
+                    className="p-2 rounded-lg studio-surface-subtle border studio-border-amber studio-fg-amber flex flex-wrap items-center justify-between gap-2"
                   >
                     <span>{conflict.message}</span>
                     <button
@@ -491,7 +491,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         setEditingVisitId(conflict.visitIdA);
                         setSelectedCardVisitId(conflict.visitIdA);
                       }}
-                      className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[10px] font-bold"
+                      className="px-2 py-0.5 rounded studio-bg-amber-strong studio-fg-amber studio-hover-amber text-[10px] font-bold"
                     >
                       Configure Visit
                     </button>
@@ -502,13 +502,13 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           )}
 
           {/* Schedule Drift & Baseline Analysis */}
-          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+          <div className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-white font-mono">
-                <IconClock className="w-4 h-4 text-brand-cyan" />
+              <div className="flex items-center gap-2 text-xs font-bold studio-fg-primary font-mono">
+                <IconClock className="w-4 h-4 studio-fg-cyan" />
                 <span>Baseline Schedule Drift Bounds</span>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded studio-surface-card border studio-border-default studio-fg-muted">
                 {baselineDrift.hasBaseline
                   ? baselineDrift.baselineLabel
                   : "Current Protocol Baseline (Active)"}
@@ -516,29 +516,29 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <span className="text-[10px] text-zinc-400 block">
+              <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                <span className="text-[10px] studio-fg-muted block">
                   Target Duration Drift
                 </span>
-                <span className="text-sm font-bold text-white">
+                <span className="text-sm font-bold studio-fg-primary">
                   {baselineDrift.targetDurationDriftDays > 0 ? "+" : ""}
                   {baselineDrift.targetDurationDriftDays} days
                 </span>
               </div>
-              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <span className="text-[10px] text-zinc-400 block">
+              <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                <span className="text-[10px] studio-fg-muted block">
                   Max Expansion Drift
                 </span>
-                <span className="text-sm font-bold text-purple-300">
+                <span className="text-sm font-bold studio-fg-purple">
                   {baselineDrift.maxExpansionDriftDays > 0 ? "+" : ""}
                   {baselineDrift.maxExpansionDriftDays} days
                 </span>
               </div>
-              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                <span className="text-[10px] text-zinc-400 block">
+              <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                <span className="text-[10px] studio-fg-muted block">
                   Max Contraction Drift
                 </span>
-                <span className="text-sm font-bold text-brand-cyan">
+                <span className="text-sm font-bold studio-fg-cyan">
                   {baselineDrift.maxContractionDriftDays > 0 ? "+" : ""}
                   {baselineDrift.maxContractionDriftDays} days
                 </span>
@@ -547,17 +547,17 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           </div>
 
           {/* Deterministic Milestone Forecasting */}
-          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-4">
+          <div className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-white font-mono">
-                <IconInfoCircle className="w-4 h-4 text-purple-400" />
+              <div className="flex items-center gap-2 text-xs font-bold studio-fg-primary font-mono">
+                <IconInfoCircle className="w-4 h-4 studio-fg-purple" />
                 <span>Subject Milestone Forecasting Controls</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">
+                <label className="block text-[10px] studio-fg-muted mb-1">
                   Study / FSI Start Date
                 </label>
                 <input
@@ -570,12 +570,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         e.target.value || new Date().toISOString().slice(0, 10),
                     })
                   }
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                  className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">
+                <label className="block text-[10px] studio-fg-muted mb-1">
                   Planned Cohort Size
                 </label>
                 <input
@@ -588,12 +588,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       cohortSize: parseInt(e.target.value, 10) || 1,
                     })
                   }
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                  className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">
+                <label className="block text-[10px] studio-fg-muted mb-1">
                   Enrollment Window (Days)
                 </label>
                 <input
@@ -606,12 +606,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       enrollmentDurationDays: parseInt(e.target.value, 10) || 0,
                     })
                   }
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                  className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">
+                <label className="block text-[10px] studio-fg-muted mb-1">
                   Expected Attrition (%)
                 </label>
                 <input
@@ -625,66 +625,66 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       expectedAttritionRate: parseInt(e.target.value, 10) || 0,
                     })
                   }
-                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                  className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-strong rounded-lg studio-fg-primary font-mono text-xs"
                 />
               </div>
             </div>
 
             {/* Projected Milestone Dates Table */}
             <div className="pt-2 space-y-2">
-              <div className="text-[11px] font-mono font-bold text-purple-300">
+              <div className="text-[11px] font-mono font-bold studio-fg-purple">
                 Calculated Protocol Milestone Projections
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-400 block">
+                <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                  <span className="text-[10px] studio-fg-muted block">
                     First Subject In (FSI)
                   </span>
-                  <span className="font-bold text-white">
+                  <span className="font-bold studio-fg-primary">
                     {milestoneForecast.fsiDate}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-400 block">
+                <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                  <span className="text-[10px] studio-fg-muted block">
                     Last Subject In (LSI)
                   </span>
-                  <span className="font-bold text-white">
+                  <span className="font-bold studio-fg-primary">
                     {milestoneForecast.lsiDate}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-400 block">
+                <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                  <span className="text-[10px] studio-fg-muted block">
                     First Subject Last Visit
                   </span>
-                  <span className="font-bold text-white">
+                  <span className="font-bold studio-fg-primary">
                     {milestoneForecast.fslvDate}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-400 block">
+                <div className="p-2.5 rounded-lg studio-surface-card border studio-border-default">
+                  <span className="text-[10px] studio-fg-muted block">
                     Last Subject Last Visit (LSLV)
                   </span>
-                  <span className="font-bold text-brand-cyan">
+                  <span className="font-bold studio-fg-cyan">
                     {milestoneForecast.lslvDate}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex flex-wrap items-center justify-between text-xs font-mono text-zinc-300 gap-2">
+              <div className="p-3 rounded-lg studio-surface-card border studio-border-default flex flex-wrap items-center justify-between text-xs font-mono studio-fg-secondary gap-2">
                 <div>
-                  <span className="text-zinc-400">
+                  <span className="studio-fg-muted">
                     Total Study Completion Bounds (LSLV):{" "}
                   </span>
-                  <span className="font-bold text-white">
+                  <span className="font-bold studio-fg-primary">
                     {milestoneForecast.earliestStudyCompletionDate} to{" "}
                     {milestoneForecast.latestStudyCompletionDate}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-400">
+                  <span className="studio-fg-muted">
                     Completing Cohort Estimate:{" "}
                   </span>
-                  <span className="font-bold text-emerald-400">
+                  <span className="font-bold studio-fg-emerald">
                     {milestoneForecast.projectedCompletingSubjects} /{" "}
                     {milestoneForecast.cohortSize} subjects
                   </span>
@@ -712,14 +712,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                   onClick={() => setSelectedCardVisitId(visit.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all border flex items-center gap-1.5 ${
                     isSelected
-                      ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan font-bold"
-                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      ? "studio-accent-cyan-strong font-bold"
+                      : "studio-surface-card studio-border-default studio-fg-muted studio-hover-fg-primary"
                   }`}
                 >
                   <span>{visit.name}</span>
                   {hasWarning && (
                     <span
-                      className="w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                      className="w-2 h-2 rounded-full studio-dot-amber shrink-0"
                       title="Window Overlap Conflict"
                     />
                   )}
@@ -729,26 +729,26 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           </div>
 
           {currentCardVisit && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-              <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+            <div className="p-4 sm:p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
+              <div className="flex items-start justify-between gap-3 border-b studio-border-default pb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm sm:text-base font-bold text-white font-mono">
+                    <h2 className="text-sm sm:text-base font-bold studio-fg-primary font-mono">
                       {currentCardVisit.name}
                     </h2>
                     {currentCardConflicts.length > 0 && (
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold font-mono inline-flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded studio-accent-amber-strong border text-[10px] font-bold font-mono inline-flex items-center gap-1">
                         <IconAlertTriangle className="w-3 h-3" />
                         <span>Conflict</span>
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-brand-cyan font-mono mt-0.5">
+                  <div className="text-xs studio-fg-cyan font-mono mt-0.5">
                     Target Day {currentCardVisit.targetDay} (
                     {formatVisitWindow(currentCardVisit)} window)
                     {currentCardVisit.epochId &&
                       epochMap.has(currentCardVisit.epochId) && (
-                        <span className="ml-2 text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/30">
+                        <span className="ml-2 studio-accent-purple px-1.5 py-0.5 rounded border">
                           {epochMap.get(currentCardVisit.epochId)}
                         </span>
                       )}
@@ -764,7 +764,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                           : currentCardVisit.id
                       )
                     }
-                    className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                    className="p-1.5 rounded-lg studio-surface-muted studio-fg-secondary studio-hover-fg-primary"
                     tooltip="Edit Visit Timing"
                     aria-label="Edit Visit Timing"
                   >
@@ -773,7 +773,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                   {study.visits.length > 1 && (
                     <TooltipButton
                       onClick={() => handleDeleteVisit(currentCardVisit.id)}
-                      className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
+                      className="p-1.5 rounded-lg studio-surface-muted studio-hover-bg-red studio-fg-muted studio-hover-fg-red"
                       tooltip="Delete Visit"
                       aria-label="Delete Visit"
                     >
@@ -785,12 +785,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
               {/* Conflict Alert Box for Current Card Visit */}
               {currentCardConflicts.length > 0 && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-mono space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                <div className="p-3 rounded-xl studio-accent-amber border text-xs font-mono space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold studio-fg-amber">
                     <IconAlertTriangle className="w-4 h-4 shrink-0" />
                     <span>Visit Window Overlap Detected</span>
                   </div>
-                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-300">
+                  <ul className="list-disc list-inside space-y-0.5 text-[11px] studio-fg-amber">
                     {currentCardConflicts.map((c, idx) => (
                       <li key={idx}>{c.message}</li>
                     ))}
@@ -800,7 +800,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
               {/* Form Checkboxes for this Visit */}
               <div className="space-y-2">
-                <div className="text-[11px] font-mono uppercase text-zinc-400 font-semibold">
+                <div className="text-[11px] font-mono uppercase studio-fg-muted font-semibold">
                   Assigned Protocol Forms (
                   {currentCardVisit.assignedFormIds.length}/{study.forms.length}
                   )
@@ -819,19 +819,19 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         }
                         className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                           isAssigned
-                            ? "bg-brand-cyan/10 border-brand-cyan/40 text-white"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-900"
+                            ? "studio-bg-cyan studio-border-cyan studio-fg-primary"
+                            : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-subtle"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-zinc-900 border border-zinc-800 text-brand-cyan">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono studio-surface-card border studio-border-default studio-fg-cyan">
                             {form.domain}
                           </span>
                           <span className="text-xs font-sans font-medium truncate">
                             {form.name}
                           </span>
                           {form.isLogForm && (
-                            <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded">
+                            <span className="text-[9px] font-mono studio-fg-purple studio-bg-purple px-1 rounded">
                               LOG
                             </span>
                           )}
@@ -840,8 +840,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         <div
                           className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 ${
                             isAssigned
-                              ? "bg-brand-cyan border-brand-cyan text-black font-bold"
-                              : "bg-zinc-900 border-zinc-700 text-transparent"
+                              ? "studio-btn-cyan font-bold"
+                              : "studio-surface-card studio-border-strong text-transparent"
                           }`}
                         >
                           <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
@@ -856,7 +856,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
         </div>
       ) : (
         /* Interactive Matrix Table with Sticky Form Column */
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-x-auto shadow-xl">
+        <div className="rounded-2xl border studio-border-default studio-surface-subtle overflow-x-auto shadow-xl">
           <table
             className="w-full text-left border-collapse min-w-[700px]"
             role="grid"
@@ -864,13 +864,13 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           >
             <thead>
               <tr
-                className="border-b border-zinc-800 bg-zinc-950/95 sticky top-0 z-20"
+                className="border-b studio-border-default studio-surface-subtle sticky top-0 z-20"
                 role="row"
               >
                 <th
                   scope="col"
                   role="columnheader"
-                  className="p-3.5 sm:p-4 text-xs font-mono font-bold text-zinc-400 w-60 sm:w-64 uppercase tracking-wider sticky left-0 bg-zinc-950 z-30 border-r border-zinc-800"
+                  className="p-3.5 sm:p-4 text-xs font-mono font-bold studio-fg-muted w-60 sm:w-64 uppercase tracking-wider sticky left-0 studio-surface-subtle z-30 border-r studio-border-default"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span>Forms ({study.forms.length})</span>
@@ -897,21 +897,21 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       role="columnheader"
                       className={`p-3 text-center border-l min-w-[140px] transition-colors ${
                         hasError
-                          ? "border-red-500/40 bg-red-950/20"
+                          ? "studio-border-red studio-bg-red"
                           : hasWarning
-                            ? "border-amber-500/40 bg-amber-950/20"
-                            : "border-zinc-800/80"
+                            ? "studio-border-amber studio-bg-amber"
+                            : "studio-border-default"
                       }`}
                     >
                       <div className="space-y-1">
-                        <div className="text-xs font-bold font-mono text-white truncate max-w-[140px] mx-auto">
+                        <div className="text-xs font-bold font-mono studio-fg-primary truncate max-w-[140px] mx-auto">
                           {visit.name}
                         </div>
-                        <div className="text-[10px] font-mono text-brand-cyan">
+                        <div className="text-[10px] font-mono studio-fg-cyan">
                           Day {visit.targetDay} ({formatVisitWindow(visit)})
                         </div>
                         {visit.epochId && epochMap.has(visit.epochId) && (
-                          <div className="text-[9px] font-mono text-purple-400">
+                          <div className="text-[9px] font-mono studio-fg-purple">
                             {epochMap.get(visit.epochId)}
                           </div>
                         )}
@@ -921,8 +921,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                           <div
                             className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono border cursor-help ${
                               hasError
-                                ? "bg-red-500/20 border-red-500/50 text-red-300"
-                                : "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                                ? "studio-accent-red-strong"
+                                : "studio-accent-amber-strong"
                             }`}
                             title={visitConflicts
                               .map((c) => c.message)
@@ -949,14 +949,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                                 editingVisitId === visit.id ? null : visit.id
                               )
                             }
-                            className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-300"
+                            className="text-[9px] font-mono px-1.5 py-0.2 rounded studio-surface-muted studio-hover-active studio-fg-secondary"
                           >
                             {editingVisitId === visit.id ? "Done" : "Edit"}
                           </button>
                           {study.visits.length > 1 && (
                             <TooltipButton
                               onClick={() => handleDeleteVisit(visit.id)}
-                              className="text-[9px] font-mono text-zinc-500 hover:text-red-400 p-0.5"
+                              className="text-[9px] font-mono studio-fg-muted studio-hover-fg-red p-0.5"
                               tooltip="Delete Visit"
                               aria-label="Delete Visit"
                             >
@@ -970,28 +970,28 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 })}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 font-mono text-xs">
+            <tbody className="divide-y studio-divide-subtle font-mono text-xs">
               {study.forms.map((form) => (
                 <tr
                   key={form.id}
                   role="row"
-                  className="hover:bg-zinc-800/40 transition-colors"
+                  className="studio-hover-surface transition-colors"
                 >
                   <th
                     scope="row"
                     role="rowheader"
-                    className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 bg-zinc-950/95 z-10 border-r border-zinc-800 font-normal text-left"
+                    className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 studio-surface-subtle z-10 border-r studio-border-default font-normal text-left"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-brand-cyan shrink-0">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold studio-surface-card border studio-border-default studio-fg-cyan shrink-0">
                           {form.domain}
                         </span>
-                        <span className="font-sans font-semibold text-zinc-200 text-xs truncate max-w-[140px] sm:max-w-none">
+                        <span className="font-sans font-semibold studio-fg-primary text-xs truncate max-w-[140px] sm:max-w-none">
                           {form.name}
                         </span>
                         {form.isLogForm && (
-                          <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded border border-purple-500/20 shrink-0">
+                          <span className="text-[9px] font-mono studio-accent-purple px-1 rounded border shrink-0">
                             LOG
                           </span>
                         )}
@@ -1027,14 +1027,14 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                             handleToggleFormAtVisit(visit.id, form.id);
                           }
                         }}
-                        className="p-3 text-center border-l border-zinc-800/60 cursor-pointer hover:bg-brand-cyan/5 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none transition-colors"
+                        className="p-3 text-center border-l studio-border-subtle cursor-pointer studio-hover-bg-cyan focus-visible:ring-2 studio-focus-ring focus-visible:outline-none transition-colors"
                       >
                         <div className="flex items-center justify-center">
                           <div
                             className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
                               isAssigned
-                                ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
-                                : "bg-zinc-900 border-zinc-800 text-transparent hover:border-zinc-700"
+                                ? "studio-btn-cyan font-bold shadow-sm"
+                                : "studio-surface-card studio-border-default text-transparent studio-hover-border-strong"
                             }`}
                           >
                             <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
@@ -1052,7 +1052,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
       {/* Selected Visit Quick Configuration Drawer */}
       {editingVisitId && (
-        <div className="mt-4 sm:mt-6 p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+        <div className="mt-4 sm:mt-6 p-4 rounded-2xl studio-surface-card border studio-border-default space-y-3">
           {(() => {
             const v = study.visits.find((item) => item.id === editingVisitId);
             if (!v) return null;
@@ -1060,12 +1060,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
             return (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-white font-mono">
+                  <div className="text-xs font-bold studio-fg-primary font-mono">
                     Configure Visit: {v.name}
                   </div>
                   <button
                     onClick={() => setEditingVisitId(null)}
-                    className="text-xs text-brand-cyan font-mono hover:underline"
+                    className="text-xs studio-fg-cyan font-mono hover:underline"
                   >
                     Done Editing
                   </button>
@@ -1073,7 +1073,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                    <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                       Visit Name
                     </label>
                     <input
@@ -1082,11 +1082,11 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                       onChange={(e) =>
                         handleUpdateVisit(v.id, { name: e.target.value })
                       }
-                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white font-sans"
+                      className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-sans"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                    <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                       Target Day Offset
                     </label>
                     <input
@@ -1097,11 +1097,11 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                           targetDay: parseInt(e.target.value, 10) || 0,
                         })
                       }
-                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white font-mono"
+                      className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                    <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                       Window Before (- Days)
                     </label>
                     <input
@@ -1112,11 +1112,11 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                           windowBefore: parseInt(e.target.value, 10) || 0,
                         })
                       }
-                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white font-mono"
+                      className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                    <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                       Window After (+ Days)
                     </label>
                     <input
@@ -1127,7 +1127,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                           windowAfter: parseInt(e.target.value, 10) || 0,
                         })
                       }
-                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-700 rounded-lg text-white font-mono"
+                      className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-strong rounded-lg studio-fg-primary font-mono"
                     />
                   </div>
                 </div>
@@ -1166,12 +1166,12 @@ function BulkToggle({
       tooltip={state === "full" ? `Clear ${label}` : `Assign ${label}`}
       onClick={onToggle}
       data-testid={testId}
-      className={`p-1 rounded-md border transition-colors flex items-center justify-center shrink-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+      className={`p-1 rounded-md border transition-colors flex items-center justify-center shrink-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 studio-focus-ring ${
         state === "full"
-          ? "bg-brand-cyan border-brand-cyan text-black"
+          ? "studio-btn-cyan"
           : state === "partial"
-            ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
-            : "bg-zinc-900 border-zinc-600 text-zinc-500 hover:text-zinc-300 hover:border-zinc-400"
+            ? "studio-accent-cyan-strong"
+            : "studio-surface-card studio-border-strong studio-fg-muted studio-hover-fg-secondary studio-hover-border"
       }`}
     >
       {state === "full" ? (

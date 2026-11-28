@@ -81,21 +81,23 @@ function categoryIcon(category: OmnibarCategory) {
   const cls = "w-4 h-4 shrink-0";
   switch (category) {
     case "form":
-      return <IconForms className={`${cls} text-brand-cyan`} aria-hidden />;
+      return <IconForms className={`${cls} studio-fg-cyan`} aria-hidden />;
     case "field":
-      return <IconListDetails className={`${cls} text-zinc-300`} aria-hidden />;
+      return (
+        <IconListDetails className={`${cls} studio-fg-secondary`} aria-hidden />
+      );
     case "visit":
       return (
-        <IconCalendarEvent className={`${cls} text-emerald-400`} aria-hidden />
+        <IconCalendarEvent className={`${cls} studio-fg-emerald`} aria-hidden />
       );
     case "insert":
-      return <IconSparkles className={`${cls} text-amber-400`} aria-hidden />;
+      return <IconSparkles className={`${cls} studio-fg-amber`} aria-hidden />;
     case "navigate":
       return (
-        <IconLayoutDashboard className={`${cls} text-slate-400`} aria-hidden />
+        <IconLayoutDashboard className={`${cls} studio-fg-muted`} aria-hidden />
       );
     case "export":
-      return <IconFileExport className={`${cls} text-sky-400`} aria-hidden />;
+      return <IconFileExport className={`${cls} studio-fg-sky`} aria-hidden />;
   }
 }
 
@@ -259,7 +261,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-14 sm:pt-20 px-4 bg-black/75"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-14 sm:pt-20 px-4 studio-surface-scrim"
       onClick={onClose}
     >
       <div
@@ -271,20 +273,20 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
         data-testid="study-omnibar"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-2xl min-w-0 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82dvh]"
+        className="w-full max-w-2xl min-w-0 studio-surface-elevated border studio-border-default rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82dvh]"
       >
-        <div className="p-3 sm:p-4 border-b border-zinc-800 bg-zinc-900/60 space-y-2.5">
+        <div className="p-3 sm:p-4 border-b studio-border-default studio-surface-subtle space-y-2.5">
           <div className="flex items-center justify-between gap-2 min-w-0">
             <h2
               id="study-omnibar-title"
-              className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate"
+              className="text-xs font-mono font-bold studio-fg-primary uppercase tracking-wider truncate"
             >
               Find in Study
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors shrink-0"
+              className="p-1 studio-fg-muted studio-hover-fg-primary rounded-lg studio-hover-surface transition-colors shrink-0"
               aria-label="Close study search"
             >
               <IconX className="w-4 h-4" aria-hidden />
@@ -293,7 +295,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
 
           <div className="relative">
             <IconSearch
-              className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              className="w-4 h-4 studio-fg-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
               aria-hidden
             />
             <input
@@ -310,7 +312,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search forms, fields, visits, or actions (e.g. weight, screening, /vitals, export)"
-              className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-700/80 rounded-xl text-sm text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+              className="w-full pl-9 pr-3 py-2 studio-surface-card border studio-border-strong rounded-xl text-sm studio-fg-primary studio-placeholder font-mono focus:outline-none studio-focus-input focus:ring-1"
             />
           </div>
 
@@ -330,8 +332,8 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-mono shrink-0 transition-colors ${
                   category === c
-                    ? "bg-brand-cyan text-black font-semibold"
-                    : "bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                    ? "studio-btn-cyan font-semibold"
+                    : "studio-surface-card studio-fg-muted studio-hover-fg-primary studio-hover-surface"
                 }`}
               >
                 {c === "all" ? "All" : OMNIBAR_CATEGORY_LABELS[c]}
@@ -344,7 +346,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
           <p
             role="note"
             data-testid="study-omnibar-dictionary-notice"
-            className="mx-3 sm:mx-4 mt-3 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200 break-words"
+            className="mx-3 sm:mx-4 mt-3 flex items-start gap-2 rounded-xl border studio-accent-amber px-3 py-2 text-[11px] break-words"
           >
             <IconInfoCircle className="w-4 h-4 shrink-0 mt-px" aria-hidden />
             <span className="min-w-0">
@@ -363,7 +365,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
           className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-3 crf-custom-scrollbar"
         >
           {groups.length === 0 ? (
-            <p className="py-10 text-center text-zinc-500 font-mono text-xs break-words">
+            <p className="py-10 text-center studio-fg-muted font-mono text-xs break-words">
               No forms, fields, visits or actions match &ldquo;{query}&rdquo;.
             </p>
           ) : (
@@ -376,7 +378,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
                 <div
                   id={`study-omnibar-group-${group.category}`}
                   role="presentation"
-                  className="px-1.5 pb-1 text-[10px] font-mono uppercase tracking-wider text-zinc-500"
+                  className="px-1.5 pb-1 text-[10px] font-mono uppercase tracking-wider studio-fg-muted"
                 >
                   {group.label}
                 </div>
@@ -398,8 +400,8 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
                         }}
                         className={`px-2.5 py-2 rounded-xl border cursor-pointer flex items-center gap-3 min-w-0 active:scale-[0.98] transition-colors ${
                           selected
-                            ? "bg-zinc-900 border-brand-cyan/60 text-white"
-                            : "bg-zinc-950 border-zinc-800/80 text-zinc-300 hover:bg-zinc-900"
+                            ? "studio-surface-card studio-border-cyan studio-fg-primary"
+                            : "studio-surface-subtle studio-border-default studio-fg-secondary studio-hover-subtle"
                         }`}
                       >
                         {categoryIcon(entry.category)}
@@ -409,18 +411,18 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
                               {entry.title}
                             </span>
                             {entry.detail && (
-                              <code className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-zinc-400 shrink-0 max-w-[40%] truncate">
+                              <code className="text-[10px] font-mono px-1.5 py-0.5 rounded studio-surface-subtle border studio-border-default studio-fg-muted shrink-0 max-w-[40%] truncate">
                                 {entry.detail}
                               </code>
                             )}
                           </div>
-                          <p className="text-[11px] text-zinc-400 truncate">
+                          <p className="text-[11px] studio-fg-muted truncate">
                             {entry.context}
                           </p>
                         </div>
                         {selected && (
                           <IconCornerDownLeft
-                            className="w-3.5 h-3.5 text-zinc-400 shrink-0 hidden sm:block"
+                            className="w-3.5 h-3.5 studio-fg-muted shrink-0 hidden sm:block"
                             aria-hidden
                           />
                         )}
@@ -429,7 +431,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
                   })}
                 </div>
                 {group.hiddenCount > 0 && (
-                  <p className="px-1.5 pt-1 text-[10px] font-mono text-zinc-500">
+                  <p className="px-1.5 pt-1 text-[10px] font-mono studio-fg-muted">
                     +{group.hiddenCount} more {group.label.toLowerCase()}: keep
                     typing or filter by category.
                   </p>
@@ -441,7 +443,7 @@ export const StudyOmnibar: React.FC<StudyOmnibarProps> = ({
 
         <div
           id="study-omnibar-hint"
-          className="px-4 py-2 border-t border-zinc-800 bg-zinc-950 text-[10px] font-mono text-zinc-500 flex items-center justify-between gap-3"
+          className="px-4 py-2 border-t studio-border-default studio-surface-subtle text-[10px] font-mono studio-fg-muted flex items-center justify-between gap-3"
         >
           <span className="truncate">↑↓ move · ↵ open or run · Esc close</span>
           <span className="shrink-0" aria-live="polite">

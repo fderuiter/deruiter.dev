@@ -339,7 +339,7 @@ describe("clipboard call sites on useClipboard (#1565)", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("CRF Studio Headless Command Engine")
     );
-    expect(button.querySelector(".text-emerald-400")).not.toBeNull();
+    expect(button.querySelector(".studio-fg-emerald")).not.toBeNull();
     expect(announce).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledWith(
       "Terminal output copied to clipboard",
@@ -353,7 +353,7 @@ describe("clipboard call sites on useClipboard (#1565)", () => {
     await act(async () => {
       fireEvent.click(button);
     });
-    expect(button.querySelector(".text-emerald-400")).toBeNull();
+    expect(button.querySelector(".studio-fg-emerald")).toBeNull();
     expect(announce).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledWith(
       expect.stringContaining("Failed to copy terminal output"),

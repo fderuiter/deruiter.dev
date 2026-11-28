@@ -71,6 +71,18 @@ describe("useStudioNavigation", () => {
     expect(result.current.activeMode).toBe("grid");
   });
 
+  it("syncs grid mode dynamically during hashchange navigation", () => {
+    const { result } = setup("#theme=light");
+    expect(result.current.activeMode).toBe("designer");
+    expect(result.current.theme).toBe("light");
+
+    act(() => {
+      writeHashParams({ mode: "grid" });
+    });
+    expect(result.current.activeMode).toBe("grid");
+    expect(result.current.theme).toBe("light");
+  });
+
   it("falls back for unknown modes, forms, visits and tabs", () => {
     const { result } = setup(
       "#mode=bogus&form=missing&visit=missing&tab=bogus&theme=sepia"

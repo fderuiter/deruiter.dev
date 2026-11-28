@@ -25,7 +25,7 @@ interface FormCatalogListProps {
 }
 
 const CHIP =
-  "inline-flex min-h-[28px] items-center rounded-full border px-2.5 py-1 text-[10px] font-mono transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 active:scale-[0.98]";
+  "inline-flex min-h-[28px] items-center rounded-full border px-2.5 py-1 text-[10px] font-mono transition-colors focus:outline-none focus-visible:ring-1 studio-focus-ring active:scale-[0.98]";
 
 /**
  * The one list of ready-made forms and blocks (#2927 item 11): CDASH
@@ -75,7 +75,7 @@ export function FormCatalogList({
         placeholder="Search forms and blocks (e.g. vitals, QTc, RECIST)..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-mono text-white placeholder-zinc-500 focus:border-amber-400 focus:outline-none"
+        className="w-full rounded-lg border studio-border-default studio-surface-card px-2.5 py-1.5 text-xs font-mono studio-fg-primary studio-placeholder studio-hover-border-amber focus:outline-none"
       />
 
       <div
@@ -89,8 +89,8 @@ export function FormCatalogList({
           onClick={() => setSource(undefined)}
           className={`${CHIP} ${
             source === undefined
-              ? "border-amber-500/50 bg-amber-950/40 text-amber-200"
-              : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white"
+              ? "studio-accent-amber"
+              : "studio-border-default studio-surface-card studio-fg-secondary studio-hover-fg-primary"
           }`}
         >
           All ({entries.length})
@@ -107,8 +107,8 @@ export function FormCatalogList({
             }
             className={`${CHIP} ${
               source === item.source
-                ? "border-amber-500/50 bg-amber-950/40 text-amber-200"
-                : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white"
+                ? "studio-accent-amber"
+                : "studio-border-default studio-surface-card studio-fg-secondary studio-hover-fg-primary"
             }`}
           >
             {item.label} ({counts.get(item.source)})
@@ -121,7 +121,7 @@ export function FormCatalogList({
       </p>
 
       {visible.length === 0 ? (
-        <p className="px-1 text-[11px] font-mono italic text-zinc-400">
+        <p className="px-1 text-[11px] font-mono italic studio-fg-muted">
           Nothing in the catalog matches “{query}”.
         </p>
       ) : (
@@ -141,7 +141,7 @@ export function FormCatalogList({
                 onDragStart={
                   canDrag ? (e) => handleDragStart(e, entry) : undefined
                 }
-                className={`group rounded-xl border border-zinc-800 bg-zinc-900/40 transition-colors hover:border-zinc-700 hover:bg-zinc-900/80 ${
+                className={`group rounded-xl border studio-border-default studio-surface-subtle transition-colors studio-hover-border-strong studio-hover-subtle ${
                   compact ? "p-2" : "p-3"
                 } ${canDrag ? "cursor-grab active:cursor-grabbing" : ""}`}
               >
@@ -149,29 +149,29 @@ export function FormCatalogList({
                   <div className="flex min-w-0 items-start gap-2">
                     {canDrag && (
                       <IconGripVertical
-                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-600"
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 studio-fg-muted"
                         aria-hidden="true"
                       />
                     )}
                     {entry.domain && (
-                      <span className="shrink-0 rounded border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-200">
+                      <span className="shrink-0 rounded border studio-border-strong studio-surface-subtle px-1.5 py-0.5 text-[10px] font-mono font-bold studio-fg-primary">
                         {entry.domain}
                       </span>
                     )}
                     <div className="min-w-0">
                       <h4
-                        className={`text-xs font-bold text-zinc-200 group-hover:text-white ${
+                        className={`text-xs font-bold studio-fg-primary studio-group-hover-fg-primary ${
                           compact ? "truncate" : "break-words"
                         }`}
                       >
                         {entry.title}
                       </h4>
                       {!compact && (
-                        <p className="break-words text-[11px] text-zinc-400">
+                        <p className="break-words text-[11px] studio-fg-muted">
                           {entry.description}
                         </p>
                       )}
-                      <p className="truncate text-[10px] font-mono text-zinc-400">
+                      <p className="truncate text-[10px] font-mono studio-fg-muted">
                         {originLabel(entry)} · {entry.fieldCount} fields
                         {entry.source === "preset" ? ` · ${entry.origin}` : ""}
                       </p>
@@ -189,7 +189,7 @@ export function FormCatalogList({
                     tooltip={
                       disabled ? "Open a form to insert a block" : undefined
                     }
-                    className="inline-flex min-h-[28px] shrink-0 items-center gap-1 rounded border border-amber-500/30 bg-zinc-900 px-2 py-1 text-[10px] font-mono font-bold text-amber-300 transition-colors hover:bg-amber-950/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-[28px] shrink-0 items-center gap-1 rounded border studio-border-amber studio-surface-card px-2 py-1 text-[10px] font-mono font-bold studio-fg-amber transition-colors studio-hover-bg-amber focus:outline-none focus-visible:ring-1 studio-focus-ring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <IconPlus className="h-3 w-3" aria-hidden="true" />
                     {isBlock ? "Insert" : "Add"}

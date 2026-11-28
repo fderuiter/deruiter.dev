@@ -124,10 +124,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         e.stopPropagation();
         onSelect();
       }}
-      className={`${spanClass} crf-field-card group relative p-3 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:border-brand-cyan ${
+      className={`${spanClass} crf-field-card group relative p-3 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none outline-none focus-visible:ring-2 studio-focus-ring ${
         isSelected
-          ? "bg-zinc-900/95 border-brand-cyan ring-1 ring-brand-cyan/60"
-          : "bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/50"
+          ? "studio-surface-card studio-border-cyan ring-1 studio-ring-cyan"
+          : "studio-surface-subtle studio-border-default studio-hover-border-strong studio-hover-subtle"
       }`}
     >
       {/* Field Top Meta & Progressive Micro-Toolbar */}
@@ -135,7 +135,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         {/* Left Badges */}
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <div
-            className="cursor-grab active:cursor-grabbing p-1 text-zinc-600 group-hover:text-zinc-300 hidden sm:block transition-colors"
+            className="cursor-grab active:cursor-grabbing p-1 studio-fg-muted studio-group-hover-fg-secondary hidden sm:block transition-colors"
             title="Drag to reorder"
           >
             <IconGripVertical className="w-3.5 h-3.5" />
@@ -143,10 +143,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
           {/* CDASH names are at most 8 characters, so the chip keeps its
               full width and the badges wrap instead (#1205). */}
-          <span className="font-mono text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded border border-brand-cyan/20 shrink-0 whitespace-nowrap">
+          <span className="font-mono text-[10px] font-bold studio-accent-cyan px-1.5 py-0.5 rounded border shrink-0 whitespace-nowrap">
             {field.variableName}
           </span>
-          <span className="font-mono text-[10px] text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 whitespace-nowrap">
+          <span className="font-mono text-[10px] studio-fg-muted studio-surface-card px-1.5 py-0.5 rounded border studio-border-default whitespace-nowrap">
             {field.dataType}
           </span>
 
@@ -168,11 +168,11 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             }}
             className={`px-1.5 py-0.5 rounded text-[9px] font-mono whitespace-nowrap transition-colors border ${
               field.requirementTier === "auto_query"
-                ? "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold"
+                ? "studio-accent-amber font-bold"
                 : field.requirementTier === "hard_stop" ||
                     (!field.requirementTier && field.required)
-                  ? "bg-red-500/15 text-red-400 border-red-500/30 font-bold"
-                  : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                  ? "studio-accent-red font-bold"
+                  : "studio-surface-card studio-fg-muted studio-border-default studio-hover-fg-primary"
             } pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:min-h-11`}
             tooltip={`Requirement Tier: ${
               field.requirementTier === "auto_query"
@@ -193,7 +193,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
           {field.requiresSdv && (
             <span
-              className="inline-flex items-center gap-0.5 font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20"
+              className="inline-flex items-center gap-0.5 font-mono text-[9px] studio-accent-emerald px-1.5 py-0.5 rounded border"
               title="Requires CRA Source Document Verification"
             >
               <IconShieldCheck className="w-3 h-3" />
@@ -203,7 +203,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
           {field.isBlinded && (
             <span
-              className="inline-flex items-center gap-0.5 font-mono text-[9px] text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20"
+              className="inline-flex items-center gap-0.5 font-mono text-[9px] studio-accent-indigo px-1.5 py-0.5 rounded border"
               title="Masked / Blinded variable"
             >
               <span>Blinded</span>
@@ -211,7 +211,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           )}
 
           {field.sdvVerified && (
-            <span className="inline-flex items-center gap-0.5 font-mono text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+            <span className="inline-flex items-center gap-0.5 font-mono text-[9px] studio-accent-emerald px-1.5 py-0.5 rounded border">
               <IconShieldCheck className="w-3 h-3" />
               <span>Verified</span>
             </span>
@@ -222,7 +222,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         <div className="flex items-center gap-1 shrink-0">
           {/* Compact Column Span Stepper (Visible on Hover / Focus / Selection) */}
           <div
-            className={`hidden sm:flex items-center bg-zinc-900/90 border border-zinc-800 rounded-lg px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 gap-1 transition-opacity ${
+            className={`hidden sm:flex items-center studio-surface-card border studio-border-default rounded-lg px-1.5 py-0.5 text-[9px] font-mono studio-fg-muted gap-1 transition-opacity ${
               isSelected
                 ? "opacity-100"
                 : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
@@ -234,13 +234,13 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 handleAdjustSpan(-1);
               }}
               disabled={field.columnSpan <= 1}
-              className="hover:text-white disabled:opacity-30 px-0.5 font-bold"
+              className="studio-hover-fg-primary disabled:opacity-30 px-0.5 font-bold"
               tooltip="Shrink column span"
               aria-label="Shrink column span"
             >
               -
             </TooltipButton>
-            <span className="text-brand-cyan font-bold">
+            <span className="studio-fg-cyan font-bold">
               {field.columnSpan}/12
             </span>
             <TooltipButton
@@ -249,7 +249,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 handleAdjustSpan(1);
               }}
               disabled={field.columnSpan >= 12}
-              className="hover:text-white disabled:opacity-30 px-0.5 font-bold"
+              className="studio-hover-fg-primary disabled:opacity-30 px-0.5 font-bold"
               tooltip="Expand column span"
               aria-label="Expand column span"
             >
@@ -274,7 +274,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   onMoveUp();
                 }}
                 disabled={!canMoveUp}
-                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
+                className="p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-primary disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
                 tooltip="Move Field Up"
                 aria-label="Move Field Up"
               >
@@ -290,7 +290,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   onMoveDown();
                 }}
                 disabled={!canMoveDown}
-                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400 transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
+                className="p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-primary disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center"
                 tooltip="Move Field Down"
                 aria-label="Move Field Down"
               >
@@ -309,12 +309,12 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                   setIsInlineEditing(true);
                 }
               }}
-              className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-brand-cyan transition-colors"
+              className="hidden sm:inline-flex p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-cyan transition-colors"
               tooltip={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
               aria-label={isInlineEditing ? "Save Inline Edit" : "Quick Edit"}
             >
               {isInlineEditing ? (
-                <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <IconCheck className="w-3.5 h-3.5 studio-fg-emerald" />
               ) : (
                 <IconEdit className="w-3.5 h-3.5" />
               )}
@@ -325,7 +325,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 onDuplicate();
               }}
-              className="hidden sm:inline-flex p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              className="hidden sm:inline-flex p-1 rounded studio-hover-surface studio-fg-muted studio-hover-fg-primary transition-colors"
               tooltip="Duplicate Field"
               aria-label="Duplicate Field"
             >
@@ -337,7 +337,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="hidden sm:inline-flex p-1 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+              className="hidden sm:inline-flex p-1 rounded studio-hover-bg-red studio-fg-muted studio-hover-fg-red transition-colors"
               tooltip="Delete Field"
               aria-label="Delete Field"
             >
@@ -352,7 +352,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 e.stopPropagation();
                 setIsMobileMenuOpen((prev) => !prev);
               }}
-              className="p-1 rounded bg-zinc-900 text-zinc-400 hover:text-white pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+              className="p-1 rounded studio-surface-card studio-fg-muted studio-hover-fg-primary pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
               tooltip="Field Actions"
               aria-label="Field Actions"
             >
@@ -368,7 +368,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                     setIsMobileMenuOpen(false);
                   }}
                 />
-                <div className="absolute right-0 top-full mt-1 w-36 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl p-1 z-40 space-y-0.5">
+                <div className="absolute right-0 top-full mt-1 w-36 studio-surface-card border studio-border-default rounded-xl shadow-xl p-1 z-40 space-y-0.5">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -377,9 +377,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                       setVarInput(field.variableName);
                       setIsInlineEditing(true);
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs studio-fg-secondary studio-hover-fg-primary studio-hover-surface rounded-lg"
                   >
-                    <IconEdit className="w-3.5 h-3.5 text-brand-cyan" />
+                    <IconEdit className="w-3.5 h-3.5 studio-fg-cyan" />
                     <span>Quick Edit</span>
                   </button>
                   <button
@@ -388,9 +388,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                       setIsMobileMenuOpen(false);
                       onDuplicate();
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs studio-fg-secondary studio-hover-fg-primary studio-hover-surface rounded-lg"
                   >
-                    <IconCopy className="w-3.5 h-3.5 text-zinc-400" />
+                    <IconCopy className="w-3.5 h-3.5 studio-fg-muted" />
                     <span>Duplicate</span>
                   </button>
                   <button
@@ -399,9 +399,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                       setIsMobileMenuOpen(false);
                       onDelete();
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/20 rounded-lg"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs studio-fg-red studio-hover-bg-red rounded-lg"
                   >
-                    <IconTrash className="w-3.5 h-3.5 text-red-400" />
+                    <IconTrash className="w-3.5 h-3.5 studio-fg-red" />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -414,22 +414,22 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       {/* Field Label & Inline Edit Mode */}
       {isInlineEditing ? (
         <div
-          className="mb-2 space-y-1.5 p-2 bg-zinc-900 border border-brand-cyan/40 rounded-xl"
+          className="mb-2 space-y-1.5 p-2 studio-surface-card border studio-border-cyan rounded-xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div>
-            <label className="block text-[9px] font-mono text-zinc-400">
+            <label className="block text-[9px] font-mono studio-fg-muted">
               Prompt / Label
             </label>
             <input
               type="text"
               value={labelInput}
               onChange={(e) => setLabelInput(e.target.value)}
-              className="w-full px-2 py-1 text-xs bg-zinc-950 border border-zinc-700 rounded text-white font-sans"
+              className="w-full px-2 py-1 text-xs studio-surface-subtle border studio-border-strong rounded studio-fg-primary font-sans"
             />
           </div>
           <div>
-            <label className="block text-[9px] font-mono text-zinc-400">
+            <label className="block text-[9px] font-mono studio-fg-muted">
               SDTM Variable (Max 8 chars)
             </label>
             <input
@@ -437,19 +437,19 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               maxLength={8}
               value={varInput}
               onChange={(e) => setVarInput(e.target.value)}
-              className="w-full px-2 py-1 text-xs bg-zinc-950 border border-zinc-700 rounded text-brand-cyan font-mono uppercase"
+              className="w-full px-2 py-1 text-xs studio-surface-subtle border studio-border-strong rounded studio-fg-cyan font-mono uppercase"
             />
           </div>
           <div className="flex justify-end gap-1.5 pt-1">
             <button
               onClick={() => setIsInlineEditing(false)}
-              className="px-2 py-0.5 text-[10px] font-mono bg-zinc-800 text-zinc-300 rounded"
+              className="px-2 py-0.5 text-[10px] font-mono studio-surface-muted studio-fg-secondary rounded"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveInline}
-              className="px-2 py-0.5 text-[10px] font-mono font-bold bg-brand-cyan text-black rounded"
+              className="px-2 py-0.5 text-[10px] font-mono font-bold studio-btn-cyan rounded"
             >
               Save
             </button>
@@ -459,13 +459,13 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         <div className="mb-2">
           <label
             htmlFor={`ecrf-canvas-${field.id}`}
-            className="block text-xs font-semibold text-zinc-100 leading-snug cursor-pointer"
+            className="block text-xs font-semibold studio-fg-primary leading-snug cursor-pointer"
           >
             {field.label}
-            {field.required && <span className="text-red-400 ml-0.5">*</span>}
+            {field.required && <span className="studio-fg-red ml-0.5">*</span>}
           </label>
           {field.description && (
-            <p className="text-[11px] text-zinc-400 mt-0.5 font-sans leading-normal">
+            <p className="text-[11px] studio-fg-muted mt-0.5 font-sans leading-normal">
               {field.description}
             </p>
           )}
@@ -480,7 +480,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             type="text"
             readOnly
             placeholder={field.placeholder || "Enter text..."}
-            className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400"
+            className="w-full px-2.5 py-1.5 text-xs studio-surface-input border studio-border-default rounded-lg studio-fg-muted"
           />
         )}
 
@@ -490,7 +490,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             readOnly
             rows={2}
             placeholder={field.placeholder || "Enter narrative..."}
-            className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 resize-none"
+            className="w-full px-2.5 py-1.5 text-xs studio-surface-input border studio-border-default rounded-lg studio-fg-muted resize-none"
           />
         )}
 
@@ -501,10 +501,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               type="text"
               readOnly
               placeholder={field.placeholder || "0.0"}
-              className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400"
+              className="w-full px-2.5 py-1.5 text-xs studio-surface-input border studio-border-default rounded-lg studio-fg-muted"
             />
             {field.unit && (
-              <span className="absolute right-2.5 top-1.5 text-[11px] font-mono text-muted">
+              <span className="absolute right-2.5 top-1.5 text-[11px] font-mono studio-fg-muted">
                 {field.unit}
               </span>
             )}
@@ -514,27 +514,27 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         {field.dataType === "precision_date" && (
           <div className="space-y-1.5">
             <div className="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
-              <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-muted block">Day</span>
+              <div className="p-1.5 rounded studio-surface-card border studio-border-default studio-fg-muted text-center">
+                <span className="text-[9px] studio-fg-muted block">Day</span>
                 <span>{field.allowPartial ? "DD / UNK" : "DD (01-31)"}</span>
               </div>
-              <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-muted block">Month</span>
+              <div className="p-1.5 rounded studio-surface-card border studio-border-default studio-fg-muted text-center">
+                <span className="text-[9px] studio-fg-muted block">Month</span>
                 <span>{field.allowPartial ? "MM / UNK" : "MMM (01-12)"}</span>
               </div>
-              <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-muted block">Year</span>
+              <div className="p-1.5 rounded studio-surface-card border studio-border-default studio-fg-muted text-center">
+                <span className="text-[9px] studio-fg-muted block">Year</span>
                 <span>YYYY</span>
               </div>
             </div>
-            <div className="flex items-center justify-between text-[10px] font-mono text-muted">
+            <div className="flex items-center justify-between text-[10px] font-mono studio-fg-muted">
               <span>
                 {field.allowPartial
                   ? "ISO: YYYY-MM-DD / UNK"
                   : "ISO: YYYY-MM-DD"}
               </span>
               {field.preventFutureDate && (
-                <span className="text-amber-400/80">≤ Today UTC</span>
+                <span className="studio-fg-amber">≤ Today UTC</span>
               )}
             </div>
           </div>
@@ -553,7 +553,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 ? "YYYY-MM-DD (or YYYY)"
                 : "YYYY-MM-DD")
             }
-            className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 font-mono"
+            className="w-full px-2.5 py-1.5 text-xs studio-surface-input border studio-border-default rounded-lg studio-fg-muted font-mono"
           />
         )}
 
@@ -567,10 +567,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             ).map((opt) => (
               <div
                 key={opt.code}
-                className="flex items-center gap-2 text-xs text-zinc-300"
+                className="flex items-center gap-2 text-xs studio-fg-secondary"
               >
                 <div
-                  className={`w-3.5 h-3.5 border border-zinc-700 bg-zinc-900 flex items-center justify-center ${
+                  className={`w-3.5 h-3.5 border studio-border-strong studio-surface-card flex items-center justify-center ${
                     field.dataType === "radio" ? "rounded-full" : "rounded"
                   }`}
                 />
@@ -581,33 +581,33 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         )}
 
         {field.dataType === "single_select" && (
-          <div className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 flex items-center justify-between">
+          <div className="w-full px-2.5 py-1.5 text-xs studio-surface-card border studio-border-default rounded-lg studio-fg-muted flex items-center justify-between">
             <span>
               {options && options.length > 0
                 ? `-- Select from ${options.length} options --`
                 : "-- Select --"}
             </span>
-            <span className="text-[10px] text-zinc-600">▼</span>
+            <span className="text-[10px] studio-fg-muted">▼</span>
           </div>
         )}
 
         {field.dataType === "checkbox" && (
-          <div className="flex items-center gap-2 text-xs text-zinc-300 pt-0.5">
-            <div className="w-3.5 h-3.5 rounded border border-zinc-700 bg-zinc-900" />
+          <div className="flex items-center gap-2 text-xs studio-fg-secondary pt-0.5">
+            <div className="w-3.5 h-3.5 rounded border studio-border-strong studio-surface-card" />
             <span>Confirm / Check</span>
           </div>
         )}
 
         {field.dataType === "calculated" && (
-          <div className="p-2 rounded-lg bg-brand-cyan/5 border border-brand-cyan/20 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-brand-cyan font-mono text-[11px]">
+          <div className="p-2 rounded-lg studio-bg-cyan border studio-border-cyan flex items-center justify-between">
+            <div className="flex items-center gap-1.5 studio-fg-cyan font-mono text-[11px]">
               <IconMathFunction className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">
                 {field.calculationFormula || "f(x)"}
               </span>
             </div>
             {field.unit && (
-              <span className="text-[10px] font-mono text-zinc-400 ml-1">
+              <span className="text-[10px] font-mono studio-fg-muted ml-1">
                 {field.unit}
               </span>
             )}
@@ -616,10 +616,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
         {field.dataType === "vas_scale" && (
           <div className="space-y-1.5 pt-1">
-            <div className="w-full h-2 bg-zinc-800 rounded-full relative overflow-hidden">
+            <div className="w-full h-2 studio-surface-muted rounded-full relative overflow-hidden">
               <div className="w-1/3 h-full bg-gradient-to-r from-emerald-500 to-amber-500" />
             </div>
-            <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
+            <div className="flex justify-between text-[10px] studio-fg-muted font-mono">
               <span>{field.scaleMinLabel || "0 mm"}</span>
               <span>{field.scaleMaxLabel || "100 mm"}</span>
             </div>
@@ -627,24 +627,24 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         )}
 
         {field.dataType === "signature" && (
-          <div className="p-2.5 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/60 flex items-center justify-between text-zinc-400 text-xs">
+          <div className="p-2.5 rounded-lg border border-dashed studio-border-strong studio-surface-subtle flex items-center justify-between studio-fg-muted text-xs">
             <div className="flex items-center gap-2 font-mono text-[11px]">
-              <IconWriting className="w-4 h-4 text-rose-400" />
+              <IconWriting className="w-4 h-4 studio-fg-red" />
               <span>21 CFR Part 11 Electronic Signature Stamp</span>
             </div>
-            <span className="text-[10px] font-mono bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">
+            <span className="text-[10px] font-mono studio-surface-muted px-2 py-0.5 rounded studio-fg-secondary">
               Pending
             </span>
           </div>
         )}
         {field.allowNullFlavor && (
-          <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-muted border-t border-zinc-800/60 mt-1">
+          <div className="flex items-center justify-between pt-1 text-[10px] font-mono studio-fg-muted border-t studio-border-subtle mt-1">
             <span>Null Flavors:</span>
             <div className="flex gap-1">
               {(["ND", "NA", "UNK"] as const).map((nf) => (
                 <span
                   key={nf}
-                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-zinc-900 text-zinc-400 border border-zinc-800"
+                  className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold studio-surface-card studio-fg-muted border studio-border-default"
                 >
                   {nf}
                 </span>
@@ -656,9 +656,11 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
       {/* CDASH SDTM Annotation Tag */}
       {field.cdashMetadata && (
-        <div className="mt-2.5 pt-2 border-t border-zinc-800 flex items-center justify-between text-[10px] font-mono text-muted">
+        <div className="mt-2.5 pt-2 border-t studio-border-default flex items-center justify-between text-[10px] font-mono studio-fg-muted">
           <span>SDTM: {field.cdashMetadata.acrfAnnotation}</span>
-          <span className="text-muted">Core: {field.cdashMetadata.core}</span>
+          <span className="studio-fg-muted">
+            Core: {field.cdashMetadata.core}
+          </span>
         </div>
       )}
     </div>

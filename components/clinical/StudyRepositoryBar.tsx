@@ -26,11 +26,11 @@ import {
 import { useStudyRepository } from "./useStudyRepository";
 
 const BTN_BASE =
-  "inline-flex items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-3 text-xs font-medium text-[#f4f4f6] transition-colors hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center rounded border border-[var(--studio-border-default,rgba(255,255,255,0.12))] bg-[var(--studio-surface-card,#0d0e11)] px-3 text-xs font-medium text-[var(--studio-fg-primary,#f4f4f6)] transition-colors hover:border-[var(--studio-border-hover,#94a3b8)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring,#fbbf24)] disabled:cursor-not-allowed disabled:opacity-50";
 const BTN_AMBER =
-  "inline-flex items-center justify-center rounded border border-amber-400/60 bg-amber-400/15 px-3 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-400/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center rounded border border-[var(--studio-accent-amber-border,rgba(251,191,36,0.6))] bg-[var(--studio-accent-amber-bg,rgba(251,191,36,0.15))] px-3 text-xs font-medium text-[var(--studio-accent-amber-fg,#fde68a)] transition-colors hover:bg-[var(--studio-accent-amber-bg-strong,rgba(251,191,36,0.25))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring,#fbbf24)] disabled:cursor-not-allowed disabled:opacity-50";
 const SELECT_BASE =
-  "min-w-0 rounded border border-white/[0.12] bg-[#0d0e11] px-2.5 text-xs font-mono text-[#f4f4f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400";
+  "min-w-0 rounded border border-[var(--studio-border-default,rgba(255,255,255,0.12))] bg-[var(--studio-surface-input,#0d0e11)] px-2.5 text-xs font-mono text-[var(--studio-fg-primary,#f4f4f6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring,#fbbf24)]";
 
 function formatBytesMiB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
@@ -93,23 +93,29 @@ export function StudyConflictModal({
       titleId={titleId}
       ariaDescribedBy={descId}
       maxWidth="max-w-lg"
-      className="border-amber-500/40 bg-[#13151a] p-5 text-[#f4f4f6]"
+      className="border-[var(--studio-accent-amber-border,rgba(245,158,11,0.4))] bg-[var(--studio-surface-elevated,#13151a)] p-5 text-[var(--studio-fg-primary,#f4f4f6)]"
     >
       {conflict ? (
         <div className="min-w-0 space-y-4">
           <div className="space-y-1">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber-300">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--studio-accent-amber-fg,#fcd34d)]">
               Concurrent revision conflict
             </p>
-            <h3 id={titleId} className="text-base font-semibold text-[#f4f4f6]">
+            <h3
+              id={titleId}
+              className="text-base font-semibold text-[var(--studio-fg-primary,#f4f4f6)]"
+            >
               {conflict.currentRevisionId === null
                 ? "Study removed from the shared repository"
                 : "Newer study revision saved in another tab"}
             </h3>
           </div>
-          <p id={descId} className="text-sm leading-relaxed text-slate-300">
+          <p
+            id={descId}
+            className="text-sm leading-relaxed text-[var(--studio-fg-secondary,#cbd5e1)]"
+          >
             This tab edited revision{" "}
-            <span className="font-mono text-[#f4f4f6]">
+            <span className="font-mono text-[var(--studio-fg-primary,#f4f4f6)]">
               {conflict.expectedRevisionId}
             </span>
             {conflict.currentRevisionId === null ? (
@@ -117,7 +123,7 @@ export function StudyConflictModal({
             ) : (
               <>
                 , while the shared browser repository is already at{" "}
-                <span className="font-mono text-amber-300">
+                <span className="font-mono text-[var(--studio-accent-amber-fg,#fcd34d)]">
                   {conflict.currentRevisionId}
                 </span>
                 . Load the newer revision or overwrite it with this tab&apos;s
@@ -205,22 +211,28 @@ function VersionDesignSelectionModal({
       titleId={titleId}
       ariaDescribedBy={descId}
       maxWidth="max-w-lg"
-      className="border-white/[0.12] bg-[#13151a] p-5 text-[#f4f4f6]"
+      className="border-[var(--studio-border-default,rgba(255,255,255,0.12))] bg-[var(--studio-surface-elevated,#13151a)] p-5 text-[var(--studio-fg-primary,#f4f4f6)]"
     >
       {pending ? (
         <form onSubmit={submit} className="min-w-0 space-y-4">
           <div className="space-y-1">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-sky-300">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--studio-accent-sky-fg,#7dd3fc)]">
               USDM v4 selection
             </p>
-            <h3 id={titleId} className="text-base font-semibold text-[#f4f4f6]">
+            <h3
+              id={titleId}
+              className="text-base font-semibold text-[var(--studio-fg-primary,#f4f4f6)]"
+            >
               Choose study version and design
             </h3>
           </div>
-          <p id={descId} className="text-sm leading-relaxed text-slate-300">
+          <p
+            id={descId}
+            className="text-sm leading-relaxed text-[var(--studio-fg-secondary,#cbd5e1)]"
+          >
             {pending.fileName ? (
               <>
-                <span className="font-mono text-[#f4f4f6]">
+                <span className="font-mono text-[var(--studio-fg-primary,#f4f4f6)]">
                   {pending.fileName}
                 </span>{" "}
                 contains multiple versions or study designs.{" "}
@@ -235,7 +247,7 @@ function VersionDesignSelectionModal({
           <div className="space-y-3">
             <label
               htmlFor={versionFieldId}
-              className="flex min-w-0 flex-col gap-1 text-xs font-mono uppercase tracking-[0.12em] text-slate-300"
+              className="flex min-w-0 flex-col gap-1 text-xs font-mono uppercase tracking-[0.12em] text-[var(--studio-fg-secondary,#cbd5e1)]"
             >
               Study version
               <select
@@ -264,7 +276,7 @@ function VersionDesignSelectionModal({
 
             <label
               htmlFor={designFieldId}
-              className="flex min-w-0 flex-col gap-1 text-xs font-mono uppercase tracking-[0.12em] text-slate-300"
+              className="flex min-w-0 flex-col gap-1 text-xs font-mono uppercase tracking-[0.12em] text-[var(--studio-fg-secondary,#cbd5e1)]"
             >
               Study design
               <select
@@ -328,34 +340,43 @@ function SchemaDiagnosticsModal({
       titleId={titleId}
       ariaDescribedBy={descId}
       maxWidth="max-w-2xl"
-      className="border-amber-500/40 bg-[#13151a] p-5 text-[#f4f4f6]"
+      className="border-[var(--studio-accent-amber-border,rgba(245,158,11,0.4))] bg-[var(--studio-surface-elevated,#13151a)] p-5 text-[var(--studio-fg-primary,#f4f4f6)]"
     >
       {state ? (
         <div className="min-w-0 space-y-4">
           <div className="space-y-1">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber-300">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--studio-accent-amber-fg,#fcd34d)]">
               USDM v{CLINICAL_STANDARDS_PROFILE.USDM} schema diagnostics
             </p>
-            <h3 id={titleId} className="text-base font-semibold text-[#f4f4f6]">
+            <h3
+              id={titleId}
+              className="text-base font-semibold text-[var(--studio-fg-primary,#f4f4f6)]"
+            >
               Canonical USDM export blocked by {state.issues.length}{" "}
               {state.issues.length === 1 ? "issue" : "issues"}
             </h3>
           </div>
-          <p id={descId} className="text-sm leading-relaxed text-slate-300">
-            <span className="text-[#f4f4f6]">{state.title}</span> has missing or
-            incomplete USDM v4 fields. Resolve the schema paths below to export
-            canonical <span className="font-mono">.usdm.json</span>, or export a{" "}
+          <p
+            id={descId}
+            className="text-sm leading-relaxed text-[var(--studio-fg-secondary,#cbd5e1)]"
+          >
+            <span className="text-[var(--studio-fg-primary,#f4f4f6)]">
+              {state.title}
+            </span>{" "}
+            has missing or incomplete USDM v4 fields. Resolve the schema paths
+            below to export canonical{" "}
+            <span className="font-mono">.usdm.json</span>, or export a{" "}
             <span className="font-mono">.study.json</span> workspace snapshot to
             preserve your work in progress.
           </p>
-          <ul className="max-h-60 space-y-1.5 overflow-y-auto rounded border border-white/[0.08] bg-[#0d0e11] p-3 font-mono text-xs text-amber-200">
+          <ul className="max-h-60 space-y-1.5 overflow-y-auto rounded border border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] bg-[var(--studio-surface-subtle,#0d0e11)] p-3 font-mono text-xs text-[var(--studio-accent-amber-fg,#fde68a)]">
             {state.issues.slice(0, 25).map((issue, idx) => (
               <li key={`${idx}-${issue}`} className="min-w-0 break-words">
                 {issue}
               </li>
             ))}
             {state.issues.length > 25 ? (
-              <li className="text-slate-400">
+              <li className="text-[var(--studio-fg-muted,#94a3b8)]">
                 …and {state.issues.length - 25} more schema issues.
               </li>
             ) : null}
@@ -607,13 +628,13 @@ export function StudyRepositoryBar({
       className={`min-w-0 space-y-2 ${className}`}
     >
       <div
-        className={`flex min-w-0 flex-wrap items-center gap-2 rounded border border-white/[0.08] bg-[#13151a] ${compact ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
+        className={`flex min-w-0 flex-wrap items-center gap-2 rounded border border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] bg-[var(--studio-surface-subtle,#13151a)] ${compact ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
       >
         {showStudySelect ? (
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <label
               htmlFor={selectId}
-              className="font-mono text-[11px] uppercase tracking-[0.14em] text-slate-400"
+              className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--studio-fg-muted,#94a3b8)]"
             >
               Active study
             </label>
@@ -639,7 +660,7 @@ export function StudyRepositoryBar({
         {activeSummary ? (
           <span
             data-testid="study-repository-revision"
-            className="min-w-0 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 font-mono text-[11px] text-emerald-300"
+            className="min-w-0 rounded border border-[var(--studio-accent-emerald-border,rgba(16,185,129,0.3))] bg-[var(--studio-accent-emerald-bg,rgba(16,185,129,0.1))] px-2 py-1 font-mono text-[11px] text-[var(--studio-accent-emerald-fg,#6ee7b7)]"
           >
             {activeSummary.revisionId} · {activeSummary.sha256.slice(0, 8)}
           </span>
@@ -703,7 +724,7 @@ export function StudyRepositoryBar({
       {snapshot.isHydrated && snapshot.persistence === "memory" ? (
         <div
           data-testid="study-repository-volatile-notice"
-          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded border border-[var(--studio-accent-amber-border,rgba(245,158,11,0.35))] bg-[var(--studio-accent-amber-bg,rgba(245,158,11,0.1))] px-3 py-2 text-xs text-[var(--studio-accent-amber-fg,#fde68a)]"
         >
           <span className="min-w-0">
             Browser IndexedDB storage is unavailable in this window, so studies
@@ -717,7 +738,7 @@ export function StudyRepositoryBar({
       {newerStoredRevision ? (
         <div
           data-testid="study-repository-reload-banner"
-          className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded border border-sky-400/40 bg-sky-500/10 px-3 py-2 text-xs text-sky-100"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded border border-[var(--studio-accent-sky-border,rgba(56,189,248,0.4))] bg-[var(--studio-accent-sky-bg,rgba(14,165,233,0.1))] px-3 py-2 text-xs text-[var(--studio-accent-sky-fg,#e0f2fe)]"
         >
           <span className="min-w-0">
             Another tab saved{" "}
@@ -746,8 +767,8 @@ export function StudyRepositoryBar({
           data-testid="study-repository-feedback"
           className={`min-w-0 break-words rounded border px-3 py-2 text-xs ${
             feedback.tone === "error"
-              ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-              : "border-white/[0.08] bg-[#0d0e11] text-slate-300"
+              ? "border-[var(--studio-accent-amber-border,rgba(245,158,11,0.4))] bg-[var(--studio-accent-amber-bg,rgba(245,158,11,0.1))] text-[var(--studio-accent-amber-fg,#fde68a)]"
+              : "border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] bg-[var(--studio-surface-card,#0d0e11)] text-[var(--studio-fg-secondary,#cbd5e1)]"
           }`}
         >
           {feedback.text}
@@ -771,12 +792,12 @@ export function StudyRepositoryBar({
         onClose={() => setIsDrawerOpen(false)}
         titleId={drawerTitleId}
         maxWidth="max-w-3xl"
-        className="border-white/[0.12] bg-[#13151a] p-5 text-[#f4f4f6]"
+        className="border-[var(--studio-border-default,rgba(255,255,255,0.12))] bg-[var(--studio-surface-elevated,#13151a)] p-5 text-[var(--studio-fg-primary,#f4f4f6)]"
       >
         <div className="min-w-0 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] pb-3">
             <div className="min-w-0 space-y-1">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400">
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--studio-fg-muted,#94a3b8)]">
                 Shared browser study catalog ·{" "}
                 {snapshot.persistence === "indexeddb"
                   ? "IndexedDB"
@@ -784,7 +805,7 @@ export function StudyRepositoryBar({
               </p>
               <h3
                 id={drawerTitleId}
-                className="text-base font-semibold text-[#f4f4f6]"
+                className="text-base font-semibold text-[var(--studio-fg-primary,#f4f4f6)]"
               >
                 Local USDM v4 studies
               </h3>
@@ -807,32 +828,32 @@ export function StudyRepositoryBar({
                   key={item.studyId}
                   className={`min-w-0 rounded border p-3 ${
                     isCurrent
-                      ? "border-amber-400/50 bg-[#0d0e11]"
-                      : "border-white/[0.08] bg-[#0d0e11]/70"
+                      ? "border-[var(--studio-accent-amber-border,rgba(251,191,36,0.5))] bg-[var(--studio-surface-subtle,#0d0e11)]"
+                      : "border-[var(--studio-border-subtle,rgba(255,255,255,0.08))] bg-[var(--studio-surface-card,rgba(13,14,17,0.7))]"
                   }`}
                 >
                   <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-semibold text-[#f4f4f6]">
+                        <span className="font-mono text-xs font-semibold text-[var(--studio-fg-primary,#f4f4f6)]">
                           {item.protocolCode}
                         </span>
-                        <span className="rounded border border-white/[0.12] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">
+                        <span className="rounded border border-[var(--studio-border-default,rgba(255,255,255,0.12))] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--studio-fg-secondary,#cbd5e1)]">
                           {kindBadgeLabel(item.kind)}
                         </span>
-                        <span className="font-mono text-[11px] text-emerald-300">
+                        <span className="font-mono text-[11px] text-[var(--studio-accent-emerald-fg,#6ee7b7)]">
                           {item.revisionId} · {item.sha256.slice(0, 10)}
                         </span>
                         {isCurrent ? (
-                          <span className="font-mono text-[11px] text-amber-300">
+                          <span className="font-mono text-[11px] text-[var(--studio-accent-amber-fg,#fcd34d)]">
                             Active
                           </span>
                         ) : null}
                       </div>
-                      <p className="min-w-0 break-words text-xs text-slate-300">
+                      <p className="min-w-0 break-words text-xs text-[var(--studio-fg-secondary,#cbd5e1)]">
                         {item.title}
                       </p>
-                      <p className="font-mono text-[11px] text-slate-400">
+                      <p className="font-mono text-[11px] text-[var(--studio-fg-muted,#94a3b8)]">
                         {item.armCount} arms · {item.epochCount} epochs ·{" "}
                         {item.encounterCount} visits · {item.activityCount}{" "}
                         activities

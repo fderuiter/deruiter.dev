@@ -240,7 +240,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
     <div className="space-y-4 p-4 text-xs font-sans">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-mono uppercase text-zinc-400 font-semibold">
+          <span className="text-[11px] font-mono uppercase studio-fg-muted font-semibold">
             {selectedField
               ? `Rules for ${selectedField.variableName}`
               : "Form Edit Checks"}{" "}
@@ -249,7 +249,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
         </div>
         <button
           onClick={handleAddRule}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-cyan/20 hover:bg-brand-cyan text-brand-cyan hover:text-black font-mono text-xs font-bold transition-all"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg studio-accent-cyan studio-hover-cyan font-mono text-xs font-bold transition-all"
         >
           <IconPlus className="w-3.5 h-3.5" />
           <span>Add Rule</span>
@@ -259,7 +259,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
       <div
         role="group"
         aria-label="Rule view"
-        className="inline-flex rounded-lg border border-zinc-800 p-0.5"
+        className="inline-flex rounded-lg border studio-border-default p-0.5"
       >
         {(["sentences", "wires"] as const).map((v) => (
           <button
@@ -269,8 +269,8 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
             onClick={() => setView(v)}
             className={`px-2 py-0.5 rounded font-mono text-[11px] ${
               view === v
-                ? "bg-zinc-800 text-white"
-                : "text-zinc-400 hover:text-zinc-200"
+                ? "studio-surface-muted studio-fg-primary"
+                : "studio-fg-muted studio-hover-fg-primary"
             }`}
           >
             {v === "sentences" ? "Sentences" : "Visual wires"}
@@ -285,11 +285,11 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
           onUpdateRules={onUpdateRules}
         />
       ) : relevantRules.length === 0 ? (
-        <div className="p-6 rounded-xl border border-dashed border-zinc-800 text-center space-y-2">
-          <p className="text-zinc-400 font-mono text-xs">
+        <div className="p-6 rounded-xl border border-dashed studio-border-default text-center space-y-2">
+          <p className="studio-fg-muted font-mono text-xs">
             No active edit checks or logic rules.
           </p>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] studio-fg-muted">
             Create conditional show/hide branching, cross-field validation range
             checks, or automated discrepancy queries.
           </p>
@@ -302,19 +302,19 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
             return (
               <div
                 key={rule.id}
-                className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800 space-y-3"
+                className="p-3.5 rounded-xl studio-surface-subtle border studio-border-default space-y-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="space-y-0.5 min-w-0">
-                    <div className="text-xs font-bold text-white font-mono truncate">
+                    <div className="text-xs font-bold studio-fg-primary font-mono truncate">
                       {rule.name}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 flex-wrap">
-                      <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan font-bold">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono studio-fg-muted flex-wrap">
+                      <span className="px-1.5 py-0.2 rounded studio-surface-card border studio-border-default studio-fg-cyan font-bold">
                         {rule.actionType}
                       </span>
-                      <span className="text-zinc-500">→</span>
-                      <span className="text-zinc-300">
+                      <span className="studio-fg-muted">→</span>
+                      <span className="studio-fg-secondary">
                         Target:{" "}
                         {allFields.find((f) => f.id === rule.targetFieldId)
                           ?.variableName || rule.targetFieldId}
@@ -325,7 +325,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                           0
                         );
                         return totalConditions > 0 ? (
-                          <span className="px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
+                          <span className="px-1.5 py-0.2 rounded studio-surface-card studio-fg-muted border studio-border-default">
                             {totalConditions}{" "}
                             {totalConditions === 1 ? "condition" : "conditions"}
                           </span>
@@ -333,7 +333,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                       })()}
                       {rule.unsupportedExpression && (
                         <span
-                          className="px-1.5 py-0.2 rounded bg-red-950/50 text-red-400 border border-red-800 font-bold"
+                          className="px-1.5 py-0.2 rounded studio-accent-red-strong border font-bold"
                           title={rule.unsupportedExpression.reason}
                         >
                           Unsupported expression: will not fire
@@ -341,7 +341,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                       )}
                     </div>
                     <p
-                      className="text-[11px] text-zinc-400 break-words"
+                      className="text-[11px] studio-fg-muted break-words"
                       data-testid="rule-sentence"
                     >
                       {describeRuleLogic(rule, allFields)}
@@ -353,13 +353,13 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                       onClick={() =>
                         setEditingRuleId(isEditing ? null : rule.id)
                       }
-                      className="px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-mono text-[11px]"
+                      className="px-2 py-0.5 rounded studio-surface-card studio-hover-surface studio-fg-secondary font-mono text-[11px]"
                     >
                       {isEditing ? "Close" : "Configure"}
                     </button>
                     <TooltipButton
                       onClick={() => handleDeleteRule(rule.id)}
-                      className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
+                      className="p-1 studio-fg-muted studio-hover-fg-red transition-colors"
                       tooltip="Delete Rule"
                       aria-label="Delete Rule"
                     >
@@ -369,9 +369,9 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                 </div>
 
                 {isEditing && (
-                  <div className="pt-3 border-t border-zinc-800 space-y-3">
+                  <div className="pt-3 border-t studio-border-default space-y-3">
                     <div>
-                      <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+                      <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                         Rule Name
                       </label>
                       <input
@@ -380,13 +380,13 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                         onChange={(e) =>
                           handleUpdateRule(rule.id, { name: e.target.value })
                         }
-                        className="w-full px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white"
+                        className="w-full px-2.5 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+                        <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                           Action Type
                         </label>
                         <select
@@ -397,7 +397,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                                 .value as EditCheckRule["actionType"],
                             })
                           }
-                          className="w-full px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white"
+                          className="w-full px-2 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary"
                         >
                           <option value="show_field">Show Field</option>
                           <option value="hide_field">Hide Field</option>
@@ -414,7 +414,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+                        <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                           Target Field
                         </label>
                         <select
@@ -424,7 +424,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                               targetFieldId: e.target.value,
                             })
                           }
-                          className="w-full px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white"
+                          className="w-full px-2 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary"
                         >
                           {allFields.map((f) => (
                             <option key={f.id} value={f.id}>
@@ -464,7 +464,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
 
                     {/* Derived Calculation Formula if Action is set_value */}
                     {rule.actionType === "set_value" && (
-                      <div className="pt-2 border-t border-zinc-800">
+                      <div className="pt-2 border-t studio-border-default">
                         <AstRuleEditor
                           formula={rule.formulaExpression || ""}
                           onChange={(newFormula) =>
@@ -481,10 +481,10 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
 
                     {/* Query Message if Action is raise_query */}
                     {rule.actionType === "raise_query" && (
-                      <div className="space-y-2 pt-1 border-t border-zinc-800">
+                      <div className="space-y-2 pt-1 border-t studio-border-default">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+                            <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                               Query Severity
                             </label>
                             <select
@@ -495,7 +495,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                                     .value as EditCheckRule["querySeverity"],
                                 })
                               }
-                              className="w-full px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white"
+                              className="w-full px-2 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary"
                             >
                               <option value="info">Info / Notice</option>
                               <option value="warning">
@@ -509,7 +509,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-mono text-zinc-500 mb-1">
+                          <label className="block text-[10px] font-mono studio-fg-muted mb-1">
                             Query Text (Discrepancy message shown to site)
                           </label>
                           <textarea
@@ -520,7 +520,7 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                                 queryMessage: e.target.value,
                               })
                             }
-                            className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-200 resize-none font-sans"
+                            className="w-full px-2.5 py-1.5 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary resize-none font-sans"
                             placeholder="e.g. Diastolic Blood Pressure exceeds systolic threshold."
                           />
                         </div>
@@ -570,7 +570,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-mono text-zinc-400 font-semibold uppercase">
+        <span className="text-[10px] font-mono studio-fg-muted font-semibold uppercase">
           Conditions
           {groups.length > 1 ? ` (groups combined with ${outerOperator})` : ""}
         </span>
@@ -578,7 +578,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
           {groups.length > 1 && (
             <TooltipButton
               onClick={onToggleOuterOperator}
-              className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan"
+              className="text-[10px] font-mono px-1.5 py-0.2 rounded studio-surface-card border studio-border-default studio-fg-cyan"
               tooltip="Toggle how groups are combined"
             >
               Groups: {outerOperator}
@@ -586,7 +586,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
           )}
           <button
             onClick={onAddGroup}
-            className="text-[10px] font-mono text-brand-cyan hover:underline"
+            className="text-[10px] font-mono studio-fg-cyan hover:underline"
           >
             + Group
           </button>
@@ -596,12 +596,12 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
       {groups.map((group, gIdx) => (
         <div
           key={group.id}
-          className="p-2 rounded-lg bg-zinc-925 border border-zinc-800 space-y-2"
+          className="p-2 rounded-lg studio-surface-card border studio-border-default space-y-2"
         >
           <div className="flex items-center justify-between">
             <TooltipButton
               onClick={() => onToggleGroupOperator(gIdx)}
-              className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan"
+              className="text-[10px] font-mono px-1.5 py-0.2 rounded studio-surface-card border studio-border-default studio-fg-cyan"
               tooltip="Toggle AND/OR within this group"
             >
               Group {gIdx + 1}: {group.logicalOperator}
@@ -609,14 +609,14 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onAddCondition(gIdx)}
-                className="text-[10px] font-mono text-brand-cyan hover:underline"
+                className="text-[10px] font-mono studio-fg-cyan hover:underline"
               >
                 + Condition
               </button>
               {groups.length > 1 && (
                 <TooltipButton
                   onClick={() => onDeleteGroup(gIdx)}
-                  className="p-1 text-zinc-500 hover:text-red-400"
+                  className="p-1 studio-fg-muted studio-hover-fg-red"
                   tooltip="Delete Group"
                   aria-label="Delete Group"
                 >
@@ -635,7 +635,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
             return (
               <div
                 key={cIdx}
-                className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 space-y-1.5"
+                className="p-2 rounded-lg studio-surface-card border studio-border-default space-y-1.5"
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <select
@@ -643,7 +643,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                     onChange={(e) =>
                       onUpdateCondition(gIdx, cIdx, { fieldId: e.target.value })
                     }
-                    className="flex-1 min-w-[90px] px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-white font-mono"
+                    className="flex-1 min-w-[90px] px-1.5 py-1 studio-surface-subtle border studio-border-default rounded text-[11px] studio-fg-primary font-mono"
                   >
                     {allFields.map((f) => (
                       <option key={f.id} value={f.id}>
@@ -659,7 +659,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                         operator: e.target.value as AstCondition["operator"],
                       })
                     }
-                    className="w-24 px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-white font-mono"
+                    className="w-24 px-1.5 py-1 studio-surface-subtle border studio-border-default rounded text-[11px] studio-fg-primary font-mono"
                   >
                     <option value="eq">== (Equals)</option>
                     <option value="neq">!= (Not Equals)</option>
@@ -686,7 +686,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                           });
                         }
                       }}
-                      className="w-16 px-1 py-1 bg-zinc-950 border border-zinc-800 rounded text-[10px] text-zinc-400 font-mono"
+                      className="w-16 px-1 py-1 studio-surface-subtle border studio-border-default rounded text-[10px] studio-fg-muted font-mono"
                       title="Compare against a literal value or another field"
                     >
                       <option value="literal">Value</option>
@@ -701,7 +701,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                       onChange={(e) =>
                         onUpdateCondition(gIdx, cIdx, { value: e.target.value })
                       }
-                      className="w-20 px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-white font-mono"
+                      className="w-20 px-1.5 py-1 studio-surface-subtle border studio-border-default rounded text-[11px] studio-fg-primary font-mono"
                       placeholder="Value"
                     />
                   )}
@@ -714,7 +714,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                           compareFieldId: e.target.value,
                         })
                       }
-                      className="flex-1 min-w-[90px] px-1.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-white font-mono"
+                      className="flex-1 min-w-[90px] px-1.5 py-1 studio-surface-subtle border studio-border-default rounded text-[11px] studio-fg-primary font-mono"
                     >
                       {allFields.map((f) => (
                         <option key={f.id} value={f.id}>
@@ -727,7 +727,7 @@ const ConditionGroupsEditor: React.FC<ConditionGroupsEditorProps> = ({
                   {group.conditions.length > 1 && (
                     <button
                       onClick={() => onDeleteCondition(gIdx, cIdx)}
-                      className="p-1 text-zinc-500 hover:text-red-400"
+                      className="p-1 studio-fg-muted studio-hover-fg-red"
                     >
                       <IconTrash className="w-3 h-3" />
                     </button>
@@ -773,21 +773,21 @@ const RuleExplanationPanel: React.FC<RuleExplanationPanelProps> = ({
 
   const resultStyle =
     explanation.result === "true"
-      ? "text-emerald-400 border-emerald-800 bg-emerald-950/30"
+      ? "studio-accent-emerald"
       : explanation.result === "false"
-        ? "text-zinc-400 border-zinc-800 bg-zinc-900"
+        ? "studio-fg-muted studio-border-default studio-surface-card"
         : explanation.result === "missing"
-          ? "text-amber-400 border-amber-800 bg-amber-950/30"
-          : "text-red-400 border-red-800 bg-red-950/30";
+          ? "studio-accent-amber"
+          : "studio-accent-red";
 
   return (
-    <div className="space-y-2 pt-2 border-t border-zinc-800">
-      <span className="text-[10px] font-mono text-zinc-400 font-semibold uppercase">
+    <div className="space-y-2 pt-2 border-t studio-border-default">
+      <span className="text-[10px] font-mono studio-fg-muted font-semibold uppercase">
         Test Values &amp; Explained Result
       </span>
 
       {referencedFieldIds.length === 0 ? (
-        <p className="text-[11px] text-zinc-400">
+        <p className="text-[11px] studio-fg-muted">
           Add a condition to test sample values.
         </p>
       ) : (
@@ -799,7 +799,7 @@ const RuleExplanationPanel: React.FC<RuleExplanationPanelProps> = ({
             return (
               <div key={fieldId} className="flex items-center gap-1">
                 <label
-                  className="text-[10px] font-mono text-zinc-500 w-20 truncate shrink-0"
+                  className="text-[10px] font-mono studio-fg-muted w-20 truncate shrink-0"
                   title={field?.variableName || fieldId}
                 >
                   {field?.variableName || fieldId}
@@ -814,7 +814,7 @@ const RuleExplanationPanel: React.FC<RuleExplanationPanelProps> = ({
                     }))
                   }
                   placeholder="test value"
-                  className="flex-1 min-w-0 px-1.5 py-0.5 bg-zinc-950 border border-zinc-800 rounded text-[11px] text-white font-mono"
+                  className="flex-1 min-w-0 px-1.5 py-0.5 studio-surface-subtle border studio-border-default rounded text-[11px] studio-fg-primary font-mono"
                 />
               </div>
             );

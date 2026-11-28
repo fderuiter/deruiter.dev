@@ -29,7 +29,7 @@ const WIDGETS: WidgetItem[] = [
     type: "text",
     label: "Single-Line Text",
     category: "inputs",
-    icon: <IconTypography className="w-4 h-4 text-sky-400" />,
+    icon: <IconTypography className="w-4 h-4 studio-fg-sky" />,
     defaultField: {
       label: "Text Question",
       variableName: "TEXT_Q",
@@ -42,7 +42,7 @@ const WIDGETS: WidgetItem[] = [
     type: "textarea",
     label: "Multiline Text",
     category: "inputs",
-    icon: <IconTypography className="w-4 h-4 text-sky-400" />,
+    icon: <IconTypography className="w-4 h-4 studio-fg-sky" />,
     defaultField: {
       label: "Clinical Narrative / Description",
       variableName: "NARRATIVE",
@@ -55,7 +55,7 @@ const WIDGETS: WidgetItem[] = [
     type: "number",
     label: "Decimal Number",
     category: "inputs",
-    icon: <Icon123 className="w-4 h-4 text-emerald-400" />,
+    icon: <Icon123 className="w-4 h-4 studio-fg-emerald" />,
     defaultField: {
       label: "Numeric Finding",
       variableName: "NUM_VAL",
@@ -68,7 +68,7 @@ const WIDGETS: WidgetItem[] = [
     type: "integer",
     label: "Integer Count",
     category: "inputs",
-    icon: <Icon123 className="w-4 h-4 text-emerald-400" />,
+    icon: <Icon123 className="w-4 h-4 studio-fg-emerald" />,
     defaultField: {
       label: "Integer Count",
       variableName: "INT_VAL",
@@ -81,7 +81,7 @@ const WIDGETS: WidgetItem[] = [
     type: "date",
     label: "Standard Date",
     category: "timing",
-    icon: <IconCalendar className="w-4 h-4 text-amber-400" />,
+    icon: <IconCalendar className="w-4 h-4 studio-fg-amber" />,
     defaultField: {
       label: "Assessment Date",
       variableName: "ASS_DAT",
@@ -93,7 +93,7 @@ const WIDGETS: WidgetItem[] = [
     type: "precision_date",
     label: "Precision Date (Segmented / ISO)",
     category: "timing",
-    icon: <IconCalendar className="w-4 h-4 text-brand-cyan" />,
+    icon: <IconCalendar className="w-4 h-4 studio-fg-cyan" />,
     defaultField: {
       label: "Clinical Event Date (Precision ISO)",
       variableName: "EVNT_DAT",
@@ -109,7 +109,7 @@ const WIDGETS: WidgetItem[] = [
     type: "partial_date",
     label: "Partial Date (UN-UNK-YYYY)",
     category: "timing",
-    icon: <IconCalendar className="w-4 h-4 text-amber-400" />,
+    icon: <IconCalendar className="w-4 h-4 studio-fg-amber" />,
     defaultField: {
       label: "Onset / Historical Date (Partial Allowed)",
       variableName: "ONSET_DAT",
@@ -122,7 +122,7 @@ const WIDGETS: WidgetItem[] = [
     type: "datetime",
     label: "Date & Time Stamp",
     category: "timing",
-    icon: <IconClock className="w-4 h-4 text-amber-400" />,
+    icon: <IconClock className="w-4 h-4 studio-fg-amber" />,
     defaultField: {
       label: "Sample Collection Timestamp",
       variableName: "COL_DTC",
@@ -134,7 +134,7 @@ const WIDGETS: WidgetItem[] = [
     type: "radio",
     label: "Radio Button Group",
     category: "codelists",
-    icon: <IconListDetails className="w-4 h-4 text-purple-400" />,
+    icon: <IconListDetails className="w-4 h-4 studio-fg-purple" />,
     defaultField: {
       label: "Custom Multiple Choice (Radio)",
       variableName: "RADIO_Q",
@@ -150,7 +150,7 @@ const WIDGETS: WidgetItem[] = [
     type: "single_select",
     label: "Dropdown Select",
     category: "codelists",
-    icon: <IconListDetails className="w-4 h-4 text-purple-400" />,
+    icon: <IconListDetails className="w-4 h-4 studio-fg-purple" />,
     defaultField: {
       label: "Custom Dropdown Question",
       variableName: "SELECT_Q",
@@ -167,7 +167,7 @@ const WIDGETS: WidgetItem[] = [
     type: "multi_select",
     label: "Multi-Select Choices",
     category: "codelists",
-    icon: <IconCheckbox className="w-4 h-4 text-purple-400" />,
+    icon: <IconCheckbox className="w-4 h-4 studio-fg-purple" />,
     defaultField: {
       label: "Multi-Select Options",
       variableName: "MULTI_Q",
@@ -184,7 +184,7 @@ const WIDGETS: WidgetItem[] = [
     type: "checkbox",
     label: "Single Checkbox Flag",
     category: "codelists",
-    icon: <IconCheckbox className="w-4 h-4 text-purple-400" />,
+    icon: <IconCheckbox className="w-4 h-4 studio-fg-purple" />,
     defaultField: {
       label: "Event is Ongoing",
       variableName: "IS_ONGOING",
@@ -196,7 +196,7 @@ const WIDGETS: WidgetItem[] = [
     type: "calculated",
     label: "Calculated Field (AST Formula)",
     category: "clinical",
-    icon: <IconMathFunction className="w-4 h-4 text-brand-cyan" />,
+    icon: <IconMathFunction className="w-4 h-4 studio-fg-cyan" />,
     defaultField: {
       label: "Calculated Clinical Metric",
       variableName: "CALC_METRIC",
@@ -211,7 +211,7 @@ const WIDGETS: WidgetItem[] = [
     type: "vas_scale",
     label: "Visual Analog Scale (VAS 0-100mm)",
     category: "clinical",
-    icon: <IconAdjustmentsHorizontal className="w-4 h-4 text-brand-cyan" />,
+    icon: <IconAdjustmentsHorizontal className="w-4 h-4 studio-fg-cyan" />,
     defaultField: {
       label: "Patient Reported Pain / Severity VAS (0-100 mm)",
       variableName: "VAS_SCORE",
@@ -227,7 +227,7 @@ const WIDGETS: WidgetItem[] = [
     type: "signature",
     label: "21 CFR Part 11 Electronic Signature",
     category: "clinical",
-    icon: <IconWriting className="w-4 h-4 text-rose-400" />,
+    icon: <IconWriting className="w-4 h-4 studio-fg-red" />,
     defaultField: {
       label: "Principal Investigator Approval & Attestation",
       variableName: "INV_SIGN",
@@ -279,7 +279,7 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ onAddField }) => {
 
   return (
     <div className="space-y-4">
-      <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold px-1">
+      <div className="text-[11px] font-mono uppercase tracking-wider studio-fg-muted font-semibold px-1">
         Clinical Field Palette
       </div>
 
@@ -287,7 +287,7 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ onAddField }) => {
         const items = WIDGETS.filter((w) => w.category === cat.key);
         return (
           <div key={cat.key} className="space-y-1.5">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest px-1">
+            <div className="text-[10px] font-mono studio-fg-muted uppercase tracking-widest px-1">
               {cat.label}
             </div>
             <div className="grid grid-cols-1 gap-1.5">
@@ -314,17 +314,17 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ onAddField }) => {
                     );
                   }}
                   onClick={() => handleAdd(widget)}
-                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800/80 hover:border-brand-cyan/40 hover:bg-zinc-900 text-left transition-all group cursor-grab active:cursor-grabbing"
+                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg studio-surface-subtle border studio-border-default studio-hover-border-cyan studio-hover-subtle text-left transition-all group cursor-grab active:cursor-grabbing"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="p-1 rounded bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+                    <span className="p-1 rounded studio-surface-card border studio-border-default studio-group-hover-border transition-colors">
                       {widget.icon}
                     </span>
-                    <span className="text-xs font-medium text-zinc-300 group-hover:text-white truncate">
+                    <span className="text-xs font-medium studio-fg-secondary studio-group-hover-fg-primary truncate">
                       {widget.label}
                     </span>
                   </div>
-                  <IconPlus className="w-3.5 h-3.5 text-zinc-600 group-hover:text-brand-cyan transition-colors shrink-0" />
+                  <IconPlus className="w-3.5 h-3.5 studio-fg-muted studio-group-hover-fg-cyan transition-colors shrink-0" />
                 </button>
               ))}
             </div>

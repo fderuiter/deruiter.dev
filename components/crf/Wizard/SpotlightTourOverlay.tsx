@@ -218,7 +218,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
     <div
       ref={containerRef}
       className={`fixed inset-0 z-50 pointer-events-auto flex items-end justify-center sm:items-center p-4 animate-fade-in ${
-        targetRect ? "" : "bg-black/60"
+        targetRect ? "" : "studio-surface-scrim"
       }`}
     >
       {/* Spotlight: a ring around the target whose huge shadow dims the rest
@@ -227,7 +227,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
         <div
           aria-hidden="true"
           data-testid="tour-spotlight"
-          className="fixed rounded-xl ring-2 ring-brand-cyan pointer-events-none transition-all duration-200 motion-reduce:transition-none"
+          className="fixed rounded-xl ring-2 studio-ring-cyan pointer-events-none transition-all duration-200 motion-reduce:transition-none"
           style={{
             top: targetRect.top - 4,
             left: targetRect.left - 4,
@@ -239,23 +239,23 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
       )}
       <div
         style={placement}
-        className={`${isAnchored ? "" : "w-full max-w-lg "}relative bg-zinc-950 border border-brand-cyan/40 rounded-3xl shadow-2xl overflow-hidden ring-1 ring-brand-cyan/30 animate-scale-in`}
+        className={`${isAnchored ? "" : "w-full max-w-lg "}relative studio-surface-elevated border studio-border-cyan rounded-3xl shadow-2xl overflow-hidden ring-1 studio-ring-cyan animate-scale-in`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="tour-step-title"
       >
         {/* Header with Step indicator */}
-        <div className="px-5 py-3.5 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between">
+        <div className="px-5 py-3.5 studio-surface-card border-b studio-border-default flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30">
+            <span className="p-1.5 rounded-lg studio-accent-cyan-strong border">
               <IconFocus2 className="w-4 h-4" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <span className="text-xs font-mono font-bold studio-fg-primary uppercase tracking-wider">
                   Interactive UI Tour
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-cyan/15 text-brand-cyan border border-brand-cyan/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold studio-accent-cyan-strong border">
                   Step {currentStep.stepNumber} of {TOUR_STEPS.length}
                 </span>
               </div>
@@ -264,7 +264,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1 rounded-lg studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
             aria-label="Exit tour"
           >
             <IconX className="w-4 h-4" />
@@ -274,24 +274,24 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
         {/* Content Body */}
         <div className="p-5 space-y-3.5">
           <div className="space-y-1">
-            <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
+            <div className="text-[10px] font-mono studio-fg-muted uppercase tracking-widest">
               {currentStep.targetDescription}
             </div>
             <h3
               id="tour-step-title"
-              className="text-base font-bold text-white font-mono"
+              className="text-base font-bold studio-fg-primary font-mono"
             >
               {currentStep.title}
             </h3>
           </div>
 
-          <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+          <p className="text-xs studio-fg-secondary font-sans leading-relaxed">
             {currentStep.details}
           </p>
 
-          <div className="p-3 rounded-xl bg-brand-cyan/5 border border-brand-cyan/20 flex items-start gap-2">
-            <IconSparkles className="w-4 h-4 text-brand-cyan shrink-0 mt-0.5" />
-            <p className="text-[11px] font-mono text-brand-cyan/90 leading-tight">
+          <div className="p-3 rounded-xl studio-bg-cyan border studio-border-cyan flex items-start gap-2">
+            <IconSparkles className="w-4 h-4 studio-fg-cyan shrink-0 mt-0.5" />
+            <p className="text-[11px] font-mono studio-fg-cyan leading-tight">
               {currentStep.actionHint}
             </p>
           </div>
@@ -304,10 +304,10 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
                 onClick={() => setCurrentStepIdx(idx)}
                 className={`h-1.5 rounded-full transition-all ${
                   idx === currentStepIdx
-                    ? "w-6 bg-brand-cyan"
+                    ? "w-6 studio-dot-cyan"
                     : idx < currentStepIdx
-                      ? "w-2 bg-emerald-500"
-                      : "w-2 bg-zinc-800"
+                      ? "w-2 studio-dot-emerald"
+                      : "w-2 studio-surface-muted"
                 }`}
                 tooltip={s.title}
                 aria-label={`Jump to step ${idx + 1}`}
@@ -317,10 +317,10 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-5 py-3.5 bg-zinc-900/60 border-t border-zinc-800 flex items-center justify-between">
+        <div className="px-5 py-3.5 studio-surface-subtle border-t studio-border-default flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+            className="text-xs font-mono studio-fg-muted studio-hover-fg-primary transition-colors"
           >
             Skip Tour
           </button>
@@ -329,7 +329,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
             <button
               onClick={handlePrev}
               disabled={currentStepIdx === 0}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-800 text-xs font-mono transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl studio-surface-card studio-hover-surface studio-fg-secondary disabled:opacity-40 disabled:cursor-not-allowed border studio-border-default text-xs font-mono transition-colors"
             >
               <IconChevronLeft className="w-3.5 h-3.5" />
               <span>Back</span>
@@ -337,7 +337,7 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
 
             <button
               onClick={handleNext}
-              className="inline-flex items-center gap-1 px-4 py-1.5 rounded-xl bg-brand-cyan text-black hover:bg-white text-xs font-mono font-bold transition-all shadow-md"
+              className="inline-flex items-center gap-1 px-4 py-1.5 rounded-xl studio-btn-cyan text-xs font-mono font-bold transition-all shadow-md"
             >
               <span>
                 {currentStepIdx === TOUR_STEPS.length - 1

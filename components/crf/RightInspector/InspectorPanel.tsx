@@ -97,11 +97,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/90 border-l border-zinc-800/80">
+    <div className="flex flex-col h-full studio-surface-sidebar border-l studio-border-default">
       {/* Top Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/80 bg-zinc-900/60">
+      <div className="flex items-center justify-between px-4 py-3 border-b studio-border-default studio-surface-subtle">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="p-1 rounded bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">
+          <span className="p-1 rounded studio-accent-cyan border">
             {selectedField ? (
               <IconAdjustments className="w-4 h-4" />
             ) : (
@@ -109,10 +109,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             )}
           </span>
           <div className="min-w-0">
-            <h3 className="text-xs font-bold text-white font-mono truncate">
+            <h3 className="text-xs font-bold studio-fg-primary font-mono truncate">
               {selectedField ? selectedField.variableName : form.name}
             </h3>
-            <p className="text-[10px] text-zinc-400 font-mono">
+            <p className="text-[10px] studio-fg-muted font-mono">
               {selectedField
                 ? "Field Property Inspector"
                 : "Form-Level Settings"}
@@ -124,11 +124,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           {selectedField && onDuplicateField && (
             <TooltipButton
               onClick={() => onDuplicateField(selectedField.id)}
-              className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
+              className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border studio-surface-card studio-fg-muted studio-hover-fg-primary studio-border-default studio-hover-surface"
               tooltip="Duplicate Field"
               aria-label="Duplicate Field"
             >
-              <IconCopy className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconCopy className="w-3.5 h-3.5 studio-fg-cyan" />
               <span className="text-[10px] hidden sm:inline">Duplicate</span>
             </TooltipButton>
           )}
@@ -136,11 +136,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           {!selectedField && onDuplicateForm && (
             <TooltipButton
               onClick={() => onDuplicateForm(form.id)}
-              className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
+              className="p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border studio-surface-card studio-fg-muted studio-hover-fg-primary studio-border-default studio-hover-surface"
               tooltip="Duplicate Form"
               aria-label="Duplicate Form"
             >
-              <IconCopy className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconCopy className="w-3.5 h-3.5 studio-fg-cyan" />
               <span className="text-[10px] hidden sm:inline">Duplicate</span>
             </TooltipButton>
           )}
@@ -149,16 +149,16 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             onClick={handleCopyCli}
             className={`p-1.5 rounded text-xs font-mono transition-all flex items-center gap-1 border ${
               hasCopiedCli
-                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                : "bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 hover:bg-zinc-800"
+                ? "studio-accent-emerald-strong"
+                : "studio-surface-card studio-fg-muted studio-hover-fg-primary studio-border-default studio-hover-surface"
             }`}
             tooltip="Copy exact CLI command for this element"
             aria-label="Copy exact CLI command for this element"
           >
             {hasCopiedCli ? (
-              <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <IconCheck className="w-3.5 h-3.5 studio-fg-emerald" />
             ) : (
-              <IconTerminal2 className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconTerminal2 className="w-3.5 h-3.5 studio-fg-cyan" />
             )}
             <span className="text-[10px] hidden sm:inline">
               {hasCopiedCli ? "Copied" : "CLI"}
@@ -167,7 +167,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
           <TooltipButton
             onClick={onClose}
-            className="p-1 text-zinc-500 hover:text-white rounded hover:bg-zinc-800 transition-colors"
+            className="p-1 studio-fg-muted studio-hover-fg-primary rounded studio-hover-surface transition-colors"
             tooltip="Deselect"
             aria-label="Deselect"
           >
@@ -177,13 +177,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex border-b border-zinc-800 bg-zinc-950/60">
+      <div className="flex border-b studio-border-default studio-surface-subtle">
         <button
           onClick={() => setActiveTab("properties")}
           className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "properties"
-              ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold studio-surface-subtle"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <span>Properties</span>
@@ -193,8 +193,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           onClick={() => setActiveTab("logic")}
           className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "logic"
-              ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold studio-surface-subtle"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <span>Edit Checks</span>
@@ -204,8 +204,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           onClick={() => setActiveTab("cdash")}
           className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "cdash"
-              ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-cyan studio-fg-cyan font-bold studio-surface-subtle"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <span>CDASH / aCRF</span>
@@ -215,12 +215,12 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           aria-label={`Review, ${openReviewThreadCount} open threads in study`}
           className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "review"
-              ? "border-amber-400 text-amber-300 font-bold bg-zinc-900/40"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+              ? "studio-border-amber studio-fg-amber font-bold studio-surface-subtle"
+              : "border-transparent studio-fg-muted studio-hover-fg-primary"
           }`}
         >
           <span>Review</span>{" "}
-          <span className="rounded bg-zinc-800 px-1 text-[9px]">
+          <span className="rounded studio-surface-muted px-1 text-[9px]">
             {openReviewThreadCount}
           </span>
         </button>
@@ -281,50 +281,50 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         ) : (
           <div className="p-4 space-y-4">
             {/* Executive Form Health Dashboard */}
-            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-3.5 shadow-sm">
+            <div className="p-4 rounded-2xl studio-surface-subtle border studio-border-default space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full studio-dot-emerald" />
+                  <span className="text-xs font-bold studio-fg-primary font-mono uppercase tracking-wider">
                     Form Conformance &amp; Telemetry
                   </span>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded studio-accent-cyan border font-bold">
                   CDASH {healthMetrics.cdashConformancePercentage}%
                 </span>
               </div>
 
               {/* 4-Metric Grid */}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                <div className="p-2.5 rounded-xl studio-surface-subtle border studio-border-default">
+                  <div className="text-[10px] font-mono studio-fg-muted uppercase">
                     Total Fields
                   </div>
-                  <div className="text-sm font-mono font-extrabold text-white mt-0.5">
+                  <div className="text-sm font-mono font-extrabold studio-fg-primary mt-0.5">
                     {healthMetrics.totalFields}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                <div className="p-2.5 rounded-xl studio-surface-subtle border studio-border-default">
+                  <div className="text-[10px] font-mono studio-fg-muted uppercase">
                     Mandatory
                   </div>
-                  <div className="text-sm font-mono font-extrabold text-amber-400 mt-0.5">
+                  <div className="text-sm font-mono font-extrabold studio-fg-amber mt-0.5">
                     {healthMetrics.mandatoryFields}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                <div className="p-2.5 rounded-xl studio-surface-subtle border studio-border-default">
+                  <div className="text-[10px] font-mono studio-fg-muted uppercase">
                     Codelists
                   </div>
-                  <div className="text-sm font-mono font-extrabold text-purple-400 mt-0.5">
+                  <div className="text-sm font-mono font-extrabold studio-fg-purple mt-0.5">
                     {healthMetrics.codelistsAttached}
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                <div className="p-2.5 rounded-xl studio-surface-subtle border studio-border-default">
+                  <div className="text-[10px] font-mono studio-fg-muted uppercase">
                     SDV Verified
                   </div>
-                  <div className="text-sm font-mono font-extrabold text-emerald-400 mt-0.5">
+                  <div className="text-sm font-mono font-extrabold studio-fg-emerald mt-0.5">
                     {healthMetrics.sdvVerifiedCount} /{" "}
                     {healthMetrics.totalFields} (
                     {healthMetrics.sdvReadinessPercentage}%)
@@ -333,11 +333,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               </div>
 
               {/* Form Metadata Settings */}
-              <div className="space-y-2.5 pt-2 border-t border-zinc-800">
+              <div className="space-y-2.5 pt-2 border-t studio-border-default">
                 <div>
                   <label
                     htmlFor="crf-inspector-form-name"
-                    className="block text-[10px] font-mono text-zinc-400 mb-1"
+                    className="block text-[10px] font-mono studio-fg-muted mb-1"
                   >
                     Form Name
                   </label>
@@ -346,13 +346,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     type="text"
                     value={form.name}
                     onChange={(e) => onUpdateFormMeta({ name: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:border-brand-cyan focus:outline-none font-sans"
+                    className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg text-xs studio-fg-primary studio-focus-input focus:outline-none font-sans"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="crf-inspector-form-domain"
-                    className="block text-[10px] font-mono text-zinc-400 mb-1"
+                    className="block text-[10px] font-mono studio-fg-muted mb-1"
                   >
                     CDASH Domain
                   </label>
@@ -363,7 +363,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     onChange={(e) =>
                       onUpdateFormMeta({ domain: e.target.value.toUpperCase() })
                     }
-                    className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-brand-cyan font-mono uppercase focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-2.5 py-1.5 studio-surface-subtle border studio-border-default rounded-lg text-xs studio-fg-cyan font-mono uppercase studio-focus-input focus:outline-none"
                   />
                 </div>
                 <div>
@@ -374,9 +374,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       onChange={(e) =>
                         onUpdateFormMeta({ isLogForm: e.target.checked })
                       }
-                      className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+                      className="rounded studio-border-strong studio-surface-card studio-fg-cyan focus:ring-0"
                     />
-                    <span className="text-xs text-zinc-300">
+                    <span className="text-xs studio-fg-secondary">
                       Continuous Log Form (e.g. AE / ConMeds)
                     </span>
                   </label>

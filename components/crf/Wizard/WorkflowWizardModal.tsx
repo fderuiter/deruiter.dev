@@ -288,66 +288,66 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
       number: 1,
       title: "Study Profile",
       subtitle: "Archetype & Metadata",
-      icon: <IconLayoutGrid className="w-4 h-4 text-sky-400" />,
+      icon: <IconLayoutGrid className="w-4 h-4 studio-fg-sky" />,
     },
     {
       number: 2,
       title: "CDASH Domains",
       subtitle: "Standard Variables",
-      icon: <IconDeviceLaptop className="w-4 h-4 text-emerald-400" />,
+      icon: <IconDeviceLaptop className="w-4 h-4 studio-fg-emerald" />,
     },
     {
       number: 3,
       title: "SoA Visit Schedule",
       subtitle: "Protocol Timeline",
-      icon: <IconCalendarEvent className="w-4 h-4 text-purple-400" />,
+      icon: <IconCalendarEvent className="w-4 h-4 studio-fg-purple" />,
     },
     {
       number: 4,
       title: "AST Rules & Logic",
       subtitle: "Dynamic Calculations",
-      icon: <IconMathFunction className="w-4 h-4 text-amber-400" />,
+      icon: <IconMathFunction className="w-4 h-4 studio-fg-amber" />,
     },
     {
       number: 5,
       title: "Audit & Deploy",
       subtitle: "Conformance & Launch",
-      icon: <IconFileExport className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconFileExport className="w-4 h-4 studio-fg-cyan" />,
     },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 studio-surface-scrim backdrop-blur-md animate-fade-in font-sans">
       <div
         ref={containerRef}
-        className="w-full max-w-4xl max-h-[92vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden font-mono"
+        className="w-full max-w-4xl max-h-[92vh] flex flex-col studio-surface-elevated border studio-border-default rounded-3xl shadow-2xl overflow-hidden font-mono"
         role="dialog"
         aria-modal="true"
         aria-labelledby="wizard-title"
         tabIndex={-1}
       >
         {/* Top Header Bar */}
-        <div className="px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/60 flex items-center justify-between">
+        <div className="px-6 py-4 border-b studio-border-default studio-surface-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-brand-cyan/15 text-brand-cyan border border-brand-cyan/30">
+            <span className="p-2 rounded-xl studio-accent-cyan-strong border">
               <IconSparkles className="w-5 h-5" />
             </span>
             <div>
               <div className="flex items-center gap-2">
                 <h2
                   id="wizard-title"
-                  className="text-base font-bold text-white tracking-wide"
+                  className="text-base font-bold studio-fg-primary tracking-wide"
                 >
                   CRF Protocol Authoring Wizard
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold studio-surface-muted studio-fg-secondary border studio-border-strong">
                   Stage {currentStageIdx + 1} of 5{" "}
                   <span className="sr-only">
                     Step {currentStageIdx + 1} of 5
                   </span>
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 font-sans">
+              <p className="text-xs studio-fg-muted font-sans">
                 Interactive clinical study configurator with live CDISC CDASH
                 2.2 validation.
               </p>
@@ -360,7 +360,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 onClose();
                 onStartSpotlightTour();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-sky studio-hover-sky border text-xs font-medium transition-all"
               tooltip="Launch interactive UI Spotlight Tour"
               aria-label="Launch interactive UI Spotlight Tour"
             >
@@ -370,7 +370,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              className="p-1.5 rounded-xl studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
               aria-label="Close authoring wizard"
             >
               <IconX className="w-5 h-5" />
@@ -379,7 +379,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
         </div>
 
         {/* Stage Navigation Step Pills */}
-        <div className="px-6 py-3 border-b border-zinc-800/60 bg-zinc-950 grid grid-cols-5 gap-2">
+        <div className="px-6 py-3 border-b studio-border-subtle studio-surface-subtle grid grid-cols-5 gap-2">
           {STAGE_HEADERS.map((s, idx) => {
             const isActive = idx === currentStageIdx;
             const isCompleted = idx < currentStageIdx;
@@ -390,19 +390,19 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 onClick={() => setCurrentStageIdx(idx)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all border ${
                   isActive
-                    ? "bg-brand-cyan/15 border-brand-cyan text-white shadow-sm"
+                    ? "studio-bg-cyan-strong studio-border-cyan studio-fg-primary shadow-sm"
                     : isCompleted
-                      ? "bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:border-zinc-700"
-                      : "bg-zinc-950 border-transparent text-zinc-500 hover:text-zinc-400"
+                      ? "studio-surface-subtle studio-border-default studio-fg-secondary studio-hover-border-strong"
+                      : "studio-surface-subtle border-transparent studio-fg-muted studio-hover-fg-secondary"
                 }`}
               >
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                     isActive
-                      ? "bg-brand-cyan text-black"
+                      ? "studio-btn-cyan"
                       : isCompleted
-                        ? "bg-emerald-500 text-black"
-                        : "bg-zinc-800 text-zinc-400"
+                        ? "studio-btn-emerald"
+                        : "studio-surface-muted studio-fg-muted"
                   }`}
                 >
                   {isCompleted ? "✓" : s.number}
@@ -411,7 +411,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   <div className="text-[11px] font-semibold truncate leading-tight">
                     {s.title}
                   </div>
-                  <div className="text-[9px] text-zinc-500 truncate">
+                  <div className="text-[9px] studio-fg-muted truncate">
                     {s.subtitle}
                   </div>
                 </div>
@@ -425,13 +425,13 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
           {/* STAGE 1: Protocol Profile & Archetype Selection */}
           {currentStageIdx === 0 && (
             <div className="space-y-6">
-              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4">
+              <div className="p-4 rounded-2xl studio-surface-subtle border studio-border-default space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <IconCertificate className="w-4 h-4 text-brand-cyan" />
+                  <div className="flex items-center gap-2 text-sm font-bold studio-fg-primary">
+                    <IconCertificate className="w-4 h-4 studio-fg-cyan" />
                     <span>Choose Starting Archetype or Customize Profile</span>
                   </div>
-                  <span className="text-xs text-zinc-500 font-sans">
+                  <span className="text-xs studio-fg-muted font-sans">
                     1-Click Presets
                   </span>
                 </div>
@@ -444,19 +444,19 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                       className={`p-3.5 rounded-xl border text-left transition-all ${
                         draftStudy.protocolNumber.includes(arch.phase) ||
                         draftStudy.studyName.includes(arch.name.split(" ")[0])
-                          ? "bg-brand-cyan/10 border-brand-cyan text-white shadow-sm"
-                          : "bg-zinc-950 hover:bg-zinc-900/80 border-zinc-800 text-zinc-300"
+                          ? "studio-bg-cyan studio-border-cyan studio-fg-primary shadow-sm"
+                          : "studio-surface-subtle studio-hover-subtle studio-border-default studio-fg-secondary"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-white truncate">
+                        <span className="text-xs font-bold studio-fg-primary truncate">
                           {arch.name}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-brand-cyan border border-zinc-700">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold studio-surface-muted studio-fg-cyan border studio-border-strong">
                           {arch.badge}
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 font-sans line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] studio-fg-muted font-sans line-clamp-2 leading-relaxed">
                         {arch.description}
                       </p>
                     </button>
@@ -465,12 +465,16 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
               </div>
 
               {/* Editable Protocol Attributes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-900/30 p-4 rounded-2xl border border-zinc-800/60">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 studio-surface-subtle p-4 rounded-2xl border studio-border-subtle">
                 <div className="space-y-1">
-                  <label className="text-xs text-zinc-400 font-medium">
+                  <label
+                    htmlFor="wizard-protocol-number"
+                    className="text-xs studio-fg-muted font-medium"
+                  >
                     Protocol Number
                   </label>
                   <input
+                    id="wizard-protocol-number"
                     type="text"
                     value={draftStudy.protocolNumber}
                     onChange={(e) =>
@@ -479,15 +483,19 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         protocolNumber: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-xl text-xs studio-fg-primary studio-focus-input focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-zinc-400 font-medium">
+                  <label
+                    htmlFor="wizard-study-phase"
+                    className="text-xs studio-fg-muted font-medium"
+                  >
                     Study Phase
                   </label>
                   <select
+                    id="wizard-study-phase"
                     value={draftStudy.phase}
                     onChange={(e) =>
                       setDraftStudy({
@@ -495,7 +503,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         phase: e.target.value as StudyProtocol["phase"],
                       })
                     }
-                    className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-xl text-xs studio-fg-primary studio-focus-input focus:outline-none"
                   >
                     <option value="Phase I">Phase I</option>
                     <option value="Phase II">Phase II</option>
@@ -506,10 +514,14 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 </div>
 
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-xs text-zinc-400 font-medium">
+                  <label
+                    htmlFor="wizard-study-title"
+                    className="text-xs studio-fg-muted font-medium"
+                  >
                     Study Title
                   </label>
                   <input
+                    id="wizard-study-title"
                     type="text"
                     value={draftStudy.studyName}
                     onChange={(e) =>
@@ -518,29 +530,37 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         studyName: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-xl text-xs studio-fg-primary studio-focus-input focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-zinc-400 font-medium">
+                  <label
+                    htmlFor="wizard-sponsor-name"
+                    className="text-xs studio-fg-muted font-medium"
+                  >
                     Sponsor Name
                   </label>
                   <input
+                    id="wizard-sponsor-name"
                     type="text"
                     value={draftStudy.sponsor}
                     onChange={(e) =>
                       setDraftStudy({ ...draftStudy, sponsor: e.target.value })
                     }
-                    className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-xl text-xs studio-fg-primary studio-focus-input focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-zinc-400 font-medium">
+                  <label
+                    htmlFor="wizard-therapeutic-area"
+                    className="text-xs studio-fg-muted font-medium"
+                  >
                     Therapeutic Area
                   </label>
                   <input
+                    id="wizard-therapeutic-area"
                     type="text"
                     value={draftStudy.therapeuticArea}
                     onChange={(e) =>
@@ -549,7 +569,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                         therapeuticArea: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-brand-cyan focus:outline-none"
+                    className="w-full px-3 py-1.5 studio-surface-subtle border studio-border-default rounded-xl text-xs studio-fg-primary studio-focus-input focus:outline-none"
                   />
                 </div>
               </div>
@@ -561,15 +581,15 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold studio-fg-primary">
                     Select CDASH &amp; Medical Device Domains
                   </h3>
-                  <p className="text-xs text-zinc-400 font-sans">
+                  <p className="text-xs studio-fg-muted font-sans">
                     Toggle standard regulatory domains to inject or remove from
                     the study protocol.
                   </p>
                 </div>
-                <span className="text-xs text-brand-cyan font-bold">
+                <span className="text-xs studio-fg-cyan font-bold">
                   {draftStudy.forms.length} of {CDASH_DOMAIN_CATALOG.length}{" "}
                   Domains Active
                 </span>
@@ -587,37 +607,37 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                       onClick={() => handleToggleDomain(dom.code)}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between space-y-2 select-none ${
                         isChecked
-                          ? "bg-zinc-900 border-brand-cyan/80 shadow-md shadow-brand-cyan/5"
-                          : "bg-zinc-950 hover:bg-zinc-900/50 border-zinc-800/80 opacity-70 hover:opacity-100"
+                          ? "studio-surface-card studio-border-cyan shadow-md shadow-brand-cyan/5"
+                          : "studio-surface-subtle studio-hover-subtle studio-border-default opacity-70 hover:opacity-100"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-brand-cyan px-2 py-0.5 rounded bg-brand-cyan/10 border border-brand-cyan/20">
+                          <span className="font-bold text-xs studio-accent-cyan px-2 py-0.5 rounded border">
                             {dom.code}
                           </span>
-                          <span className="text-xs font-bold text-white truncate">
+                          <span className="text-xs font-bold studio-fg-primary truncate">
                             {dom.label.split(" ")[0]}
                           </span>
                         </div>
                         <div
                           className={`w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ${
                             isChecked
-                              ? "bg-brand-cyan text-black"
-                              : "bg-zinc-800 text-transparent"
+                              ? "studio-btn-cyan"
+                              : "studio-surface-muted text-transparent"
                           }`}
                         >
                           ✓
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-zinc-400 font-sans line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] studio-fg-muted font-sans line-clamp-2 leading-relaxed">
                         {dom.description}
                       </p>
 
-                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-1 border-t border-zinc-800">
+                      <div className="flex items-center justify-between text-[10px] studio-fg-muted pt-1 border-t studio-border-default">
                         <span>{dom.variableCount} Standard Vars</span>
-                        <span className="uppercase text-[9px] text-zinc-400">
+                        <span className="uppercase text-[9px] studio-fg-muted">
                           {dom.category}
                         </span>
                       </div>
@@ -633,17 +653,17 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold studio-fg-primary">
                     Schedule of Activities (SoA) Matrix
                   </h3>
-                  <p className="text-xs text-zinc-400 font-sans">
+                  <p className="text-xs studio-fg-muted font-sans">
                     Configure longitudinal visit timeline and assign CRF forms
                     to study events.
                   </p>
                 </div>
                 <button
                   onClick={handleAddVisit}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-xs font-bold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-purple-strong studio-hover-purple border text-xs font-bold transition-colors"
                 >
                   <IconPlus className="w-3.5 h-3.5" />
                   <span>Add Visit</span>
@@ -654,21 +674,21 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 {draftStudy.visits.map((visit) => (
                   <div
                     key={visit.id}
-                    className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-3"
+                    className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-3"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold studio-accent-amber border">
                           Day {visit.targetDay} ({formatVisitWindow(visit)})
                         </span>
-                        <span className="text-xs font-bold text-white">
+                        <span className="text-xs font-bold studio-fg-primary">
                           {visit.name}
                         </span>
                       </div>
                       {draftStudy.visits.length > 1 && (
                         <TooltipButton
                           onClick={() => handleRemoveVisit(visit.id)}
-                          className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                          className="p-1 rounded studio-fg-muted studio-hover-fg-red studio-hover-surface transition-colors"
                           tooltip="Delete visit"
                           aria-label="Delete visit"
                         >
@@ -692,8 +712,8 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                             }
                             className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all ${
                               isAssigned
-                                ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-xs"
-                                : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                ? "studio-accent-cyan-strong shadow-xs"
+                                : "studio-surface-subtle studio-border-default studio-fg-muted studio-hover-fg-secondary"
                             }`}
                           >
                             {isAssigned ? "✓ " : "+ "}
@@ -713,10 +733,10 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold studio-fg-primary">
                     Clinical Calculations &amp; AST Edit Checks
                   </h3>
-                  <p className="text-xs text-zinc-400 font-sans">
+                  <p className="text-xs studio-fg-muted font-sans">
                     Inject automated mathematical derivations and multi-field
                     validation rules into the protocol.
                   </p>
@@ -726,64 +746,64 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div
                   onClick={() => handleToggleCalculationRule("BMI")}
-                  className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-brand-cyan/50 cursor-pointer space-y-2 transition-colors"
+                  className="p-4 rounded-xl studio-surface-subtle border studio-border-default studio-hover-border-cyan cursor-pointer space-y-2 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-xs font-bold studio-fg-primary">
                       Body Mass Index (BMI)
                     </span>
-                    <IconMathFunction className="w-4 h-4 text-emerald-400" />
+                    <IconMathFunction className="w-4 h-4 studio-fg-emerald" />
                   </div>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-normal">
+                  <p className="text-[11px] studio-fg-muted font-sans leading-normal">
                     Automated formula evaluating weight (kg) over height (m²).
                   </p>
-                  <code className="text-[10px] text-brand-cyan block bg-zinc-950 p-1.5 rounded border border-zinc-800">
+                  <code className="text-[10px] studio-fg-cyan block studio-surface-subtle p-1.5 rounded border studio-border-default">
                     round(WEIGHT / ((HEIGHT/100)^2), 1)
                   </code>
                 </div>
 
                 <div
                   onClick={() => handleToggleCalculationRule("MAP")}
-                  className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-brand-cyan/50 cursor-pointer space-y-2 transition-colors"
+                  className="p-4 rounded-xl studio-surface-subtle border studio-border-default studio-hover-border-cyan cursor-pointer space-y-2 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-xs font-bold studio-fg-primary">
                       Mean Arterial Pressure (MAP)
                     </span>
-                    <IconMathFunction className="w-4 h-4 text-purple-400" />
+                    <IconMathFunction className="w-4 h-4 studio-fg-purple" />
                   </div>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-normal">
+                  <p className="text-[11px] studio-fg-muted font-sans leading-normal">
                     Blood pressure hemodynamic calculation from Systolic and
                     Diastolic.
                   </p>
-                  <code className="text-[10px] text-purple-400 block bg-zinc-950 p-1.5 rounded border border-zinc-800">
+                  <code className="text-[10px] studio-fg-purple block studio-surface-subtle p-1.5 rounded border studio-border-default">
                     round((2 * DIABP + SYSBP) / 3, 1)
                   </code>
                 </div>
 
                 <div
                   onClick={() => handleToggleCalculationRule("COMPLIANCE")}
-                  className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-brand-cyan/50 cursor-pointer space-y-2 transition-colors"
+                  className="p-4 rounded-xl studio-surface-subtle border studio-border-default studio-hover-border-cyan cursor-pointer space-y-2 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-xs font-bold studio-fg-primary">
                       Drug Accountability (%)
                     </span>
-                    <IconMathFunction className="w-4 h-4 text-amber-400" />
+                    <IconMathFunction className="w-4 h-4 studio-fg-amber" />
                   </div>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-normal">
+                  <p className="text-[11px] studio-fg-muted font-sans leading-normal">
                     Compliance percentage from dispensed and returned unit
                     pills.
                   </p>
-                  <code className="text-[10px] text-amber-400 block bg-zinc-950 p-1.5 rounded border border-zinc-800">
+                  <code className="text-[10px] studio-fg-amber block studio-surface-subtle p-1.5 rounded border studio-border-default">
                     round(((DISP - RET) / DISP) * 100, 1)
                   </code>
                 </div>
               </div>
 
               {/* Active Rules List */}
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800 space-y-2">
-                <span className="text-xs font-bold text-zinc-300">
+              <div className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-2">
+                <span className="text-xs font-bold studio-fg-secondary">
                   Active Rules in Protocol (
                   {draftStudy.forms.reduce((acc, f) => acc + f.rules.length, 0)}
                   ):
@@ -795,12 +815,12 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   .map((rule, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between text-xs py-1 border-b border-zinc-800 last:border-0"
+                      className="flex items-center justify-between text-xs py-1 border-b studio-border-default last:border-0"
                     >
-                      <span className="text-brand-cyan font-bold">
+                      <span className="studio-fg-cyan font-bold">
                         [{rule.domain}] {rule.name}
                       </span>
-                      <span className="text-zinc-400 text-[11px] font-sans">
+                      <span className="studio-fg-muted text-[11px] font-sans">
                         {rule.formulaExpression || rule.queryMessage}
                       </span>
                     </div>
@@ -812,19 +832,19 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
           {/* STAGE 5: Conformance Audit & Instant Deployment */}
           {currentStageIdx === 4 && (
             <div className="space-y-5">
-              <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
+              <div className="p-5 rounded-2xl studio-surface-subtle border studio-border-default space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <IconShieldCheck className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-sm font-bold text-white">
+                    <IconShieldCheck className="w-5 h-5 studio-fg-emerald" />
+                    <h3 className="text-sm font-bold studio-fg-primary">
                       Regulatory &amp; Logic Conformance Audit
                     </h3>
                   </div>
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
                       validationReport.isCompliant
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                        : "bg-red-500/10 text-red-400 border-red-500/30"
+                        ? "studio-accent-emerald"
+                        : "studio-accent-red"
                     }`}
                   >
                     {validationReport.isCompliant
@@ -834,7 +854,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 </div>
 
                 {validationReport.issues.length === 0 ? (
-                  <p className="text-xs text-zinc-300 font-sans">
+                  <p className="text-xs studio-fg-secondary font-sans">
                     All {draftStudy.forms.length} clinical domains,{" "}
                     {draftStudy.visits.length} Schedule of Activities visits,
                     and AST rule graphs pass the implemented design checks (a
@@ -845,9 +865,9 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   <div className="space-y-1.5 max-h-36 overflow-y-auto">
                     {validationReport.issues.map((iss, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <IconAlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="text-brand-cyan">[{iss.form}]</span>
-                        <span className="text-zinc-300 font-sans">
+                        <IconAlertTriangle className="w-3.5 h-3.5 studio-fg-amber shrink-0" />
+                        <span className="studio-fg-cyan">[{iss.form}]</span>
+                        <span className="studio-fg-secondary font-sans">
                           {iss.message}
                         </span>
                       </div>
@@ -858,24 +878,24 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
 
               {/* Protocol Summary Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-center">
-                  <div className="text-lg font-bold text-white">
+                <div className="p-3 studio-surface-subtle rounded-xl border studio-border-default text-center">
+                  <div className="text-lg font-bold studio-fg-primary">
                     {draftStudy.forms.length}
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">
+                  <div className="text-[10px] studio-fg-muted uppercase">
                     CDASH Domains
                   </div>
                 </div>
-                <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-center">
-                  <div className="text-lg font-bold text-white">
+                <div className="p-3 studio-surface-subtle rounded-xl border studio-border-default text-center">
+                  <div className="text-lg font-bold studio-fg-primary">
                     {draftStudy.visits.length}
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">
+                  <div className="text-[10px] studio-fg-muted uppercase">
                     Study Visits
                   </div>
                 </div>
-                <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-center">
-                  <div className="text-lg font-bold text-white">
+                <div className="p-3 studio-surface-subtle rounded-xl border studio-border-default text-center">
+                  <div className="text-lg font-bold studio-fg-primary">
                     {draftStudy.forms.reduce(
                       (a, f) =>
                         a +
@@ -883,15 +903,15 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                       0
                     )}
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">
+                  <div className="text-[10px] studio-fg-muted uppercase">
                     Clinical Variables
                   </div>
                 </div>
-                <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-center">
-                  <div className="text-lg font-bold text-white">
+                <div className="p-3 studio-surface-subtle rounded-xl border studio-border-default text-center">
+                  <div className="text-lg font-bold studio-fg-primary">
                     {draftStudy.forms.reduce((a, f) => a + f.rules.length, 0)}
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">
+                  <div className="text-[10px] studio-fg-muted uppercase">
                     AST Rules
                   </div>
                 </div>
@@ -901,20 +921,20 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
         </div>
 
         {/* Footer Navigation Bar */}
-        <div className="px-6 py-4 border-t border-zinc-800/80 bg-zinc-900/60 flex items-center justify-between">
+        <div className="px-6 py-4 border-t studio-border-default studio-surface-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() =>
                 setCurrentStageIdx((prev) => Math.max(0, prev - 1))
               }
               disabled={currentStageIdx === 0}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-800 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl studio-surface-card studio-hover-surface studio-fg-secondary disabled:opacity-40 disabled:cursor-not-allowed border studio-border-default text-xs font-semibold transition-colors"
             >
               <IconChevronLeft className="w-4 h-4" />
               <span>Previous</span>
             </button>
 
-            <span className="text-xs text-zinc-500 hidden sm:inline">
+            <span className="text-xs studio-fg-muted hidden sm:inline">
               Use ← and → arrow keys to navigate
             </span>
           </div>
@@ -925,7 +945,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                 onClick={() =>
                   setCurrentStageIdx((prev) => Math.min(4, prev + 1))
                 }
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-brand-cyan text-black hover:bg-white text-xs font-bold transition-all shadow-md"
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl studio-btn-cyan text-xs font-bold transition-all shadow-md"
               >
                 <span>Next Stage</span>
                 <IconChevronRight className="w-4 h-4" />
@@ -933,7 +953,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
             ) : (
               <button
                 onClick={handleDeploy}
-                className="inline-flex items-center gap-1.5 px-6 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-black text-xs font-bold transition-all shadow-lg shadow-emerald-500/20"
+                className="inline-flex items-center gap-1.5 px-6 py-2 rounded-xl studio-btn-emerald text-xs font-bold transition-all shadow-lg shadow-emerald-500/20"
               >
                 <IconCheck className="w-4 h-4" />
                 <span>Deploy Protocol to Studio Canvas</span>

@@ -143,25 +143,25 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
       ref={containerRef}
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 studio-surface-scrim backdrop-blur-sm"
     >
-      <div className="bg-zinc-900 border border-zinc-700/80 rounded-2xl w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="studio-surface-elevated border studio-border-strong rounded-2xl w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-800 bg-zinc-950/70">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b studio-border-default studio-surface-subtle">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-brand-cyan shrink-0">
+            <div className="p-1.5 sm:p-2 rounded-lg studio-accent-cyan border shrink-0">
               <IconShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs sm:text-base font-bold text-white font-mono flex items-center gap-2 flex-wrap">
+              <h3 className="text-xs sm:text-base font-bold studio-fg-primary font-mono flex items-center gap-2 flex-wrap">
                 <span className="truncate">
                   CDISC Conformance &amp; Regulatory Validation Studio
                 </span>
-                <span className="text-[9px] sm:text-[10px] bg-brand-cyan/15 text-brand-cyan px-1.5 sm:px-2 py-0.5 rounded border border-brand-cyan/30">
+                <span className="text-[9px] sm:text-[10px] studio-accent-cyan-strong px-1.5 sm:px-2 py-0.5 rounded border">
                   {standardCitation("CDASHIG")} / {standardCitation("SDTMIG")}
                 </span>
               </h3>
-              <p className="text-[11px] sm:text-xs text-zinc-400 font-sans truncate sm:whitespace-normal">
+              <p className="text-[11px] sm:text-xs studio-fg-muted font-sans truncate sm:whitespace-normal">
                 Real-time validation for missing core variables and SDTM limits
                 with 1-Click Auto-Fix.
               </p>
@@ -170,21 +170,21 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
           <button
             onClick={onClose}
             aria-label="Close diagnostics drawer"
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
+            className="p-1.5 rounded-lg studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors shrink-0"
           >
             <IconX className="w-5 h-5" />
           </button>
         </div>
 
         {/* Severity Filter Tabs & Auto-Fix All Action */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-zinc-800 bg-zinc-950/40 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b studio-border-default studio-surface-subtle flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFilterSeverity("all")}
               className={`px-3 py-1 rounded-lg text-xs font-mono transition-all ${
                 filterSeverity === "all"
-                  ? "bg-zinc-800 text-white font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-surface-muted studio-fg-primary font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               All Issues ({complianceViolations.length + astDiagnostics.length})
@@ -193,12 +193,12 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
               onClick={() => setFilterSeverity("error")}
               className={`px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
                 filterSeverity === "error"
-                  ? "bg-red-500/20 text-red-400 border border-red-500/30 font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-accent-red-strong border font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               <span>Errors</span>
-              <span className="text-[10px] bg-red-500/30 px-1.5 py-0.2 rounded">
+              <span className="text-[10px] studio-bg-red-strong px-1.5 py-0.2 rounded">
                 {totalErrors}
               </span>
             </button>
@@ -206,12 +206,12 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
               onClick={() => setFilterSeverity("warning")}
               className={`px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
                 filterSeverity === "warning"
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "studio-accent-amber-strong border font-bold"
+                  : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
               <span>Warnings</span>
-              <span className="text-[10px] bg-amber-500/30 px-1.5 py-0.2 rounded">
+              <span className="text-[10px] studio-bg-amber-strong px-1.5 py-0.2 rounded">
                 {totalWarnings}
               </span>
             </button>
@@ -221,7 +221,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
             onUpdateStudy && (
               <button
                 onClick={handleFixAll}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-cyan hover:bg-white text-black font-mono text-xs font-bold transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-btn-cyan font-mono text-xs font-bold transition-all shadow-sm"
               >
                 <IconWand className="w-3.5 h-3.5" />
                 <span>1-Click Auto-Fix All</span>
@@ -231,8 +231,8 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
 
         {/* Action Notice Alert */}
         {fixedNotice && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-in fade-in">
-            <IconCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mx-6 mt-4 p-3 rounded-xl studio-accent-emerald border text-xs font-mono flex items-center gap-2 animate-in fade-in">
+            <IconCheck className="w-4 h-4 studio-fg-emerald shrink-0" />
             <span>{fixedNotice}</span>
           </div>
         )}
@@ -240,14 +240,14 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
         {/* Diagnostics Results Body */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
           {complianceViolations.length === 0 && astDiagnostics.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-zinc-950/60 border border-zinc-800 text-center space-y-2">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+            <div className="p-8 rounded-2xl studio-surface-subtle border studio-border-default text-center space-y-2">
+              <div className="w-10 h-10 rounded-full studio-accent-emerald border flex items-center justify-center mx-auto">
                 <IconCheck className="w-5 h-5" />
               </div>
-              <div className="text-sm font-bold text-white font-mono">
+              <div className="text-sm font-bold studio-fg-primary font-mono">
                 No findings from the implemented checks
               </div>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs studio-fg-muted">
                 Forms, variable identifiers, formulas, codelists and Schedule of
                 Activities visits pass the design checks this studio implements,
                 a subset of {standardCitation("CDASHIG")} and{" "}
@@ -262,8 +262,8 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                   key={v.id}
                   className={`p-4 rounded-xl border font-mono text-xs space-y-2 transition-all ${
                     v.severity === "error"
-                      ? "bg-red-500/5 border-red-500/30"
-                      : "bg-amber-500/5 border-amber-500/30"
+                      ? "studio-bg-red studio-border-red"
+                      : "studio-bg-amber studio-border-amber"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -272,22 +272,22 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                             v.severity === "error"
-                              ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                              : "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                              ? "studio-accent-red-strong border"
+                              : "studio-accent-amber-strong border"
                           }`}
                         >
                           {v.ruleId}
                         </span>
-                        <span className="font-bold text-white">
+                        <span className="font-bold studio-fg-primary">
                           Form: {v.formName}
                         </span>
                         {v.variableName && (
-                          <span className="text-brand-cyan">
+                          <span className="studio-fg-cyan">
                             ({v.variableName})
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-300 font-sans">
+                      <p className="text-xs studio-fg-secondary font-sans">
                         {v.message}
                       </p>
                     </div>
@@ -296,7 +296,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                       {v.autoFixAvailable && onUpdateStudy && (
                         <TooltipButton
                           onClick={() => handleFixSingle(v)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-cyan/15 hover:bg-brand-cyan/25 border border-brand-cyan/40 text-brand-cyan text-[11px] font-mono transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg studio-accent-cyan-strong studio-hover-bg-cyan-strong border text-[11px] font-mono transition-colors"
                           tooltip="Apply instant schema fix"
                         >
                           <IconWand className="w-3 h-3" />
@@ -309,7 +309,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                           onSelectForm(v.formId);
                           onClose();
                         }}
-                        className="text-[11px] font-mono text-zinc-400 hover:text-white underline ml-1"
+                        className="text-[11px] font-mono studio-fg-muted studio-hover-fg-primary underline ml-1"
                       >
                         Inspect Form →
                       </button>
@@ -317,9 +317,9 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                   </div>
 
                   {v.suggestedFix && (
-                    <div className="text-[10px] text-zinc-500 font-sans pt-1 border-t border-zinc-800">
+                    <div className="text-[10px] studio-fg-muted font-sans pt-1 border-t studio-border-default">
                       Suggested Remedy:{" "}
-                      <span className="text-zinc-300 font-mono">
+                      <span className="studio-fg-secondary font-mono">
                         {v.suggestedFix}
                       </span>
                     </div>
@@ -332,10 +332,10 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                   key={d.id}
                   className={`p-4 rounded-xl border font-mono text-xs space-y-2 transition-all ${
                     d.severity === "error"
-                      ? "bg-red-500/5 border-red-500/30"
+                      ? "studio-bg-red studio-border-red"
                       : d.severity === "warning"
-                        ? "bg-amber-500/5 border-amber-500/30"
-                        : "bg-zinc-800/30 border-zinc-700/50"
+                        ? "studio-bg-amber studio-border-amber"
+                        : "studio-surface-muted studio-border-strong"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -344,22 +344,22 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                             d.severity === "error"
-                              ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                              ? "studio-accent-red-strong border"
                               : d.severity === "warning"
-                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                                : "bg-zinc-700/40 text-zinc-300 border border-zinc-600/50"
+                                ? "studio-accent-amber-strong border"
+                                : "studio-surface-active studio-fg-secondary border studio-border-strong"
                           }`}
                         >
                           Rule Ref
                         </span>
-                        <span className="font-bold text-white">
+                        <span className="font-bold studio-fg-primary">
                           Form: {d.formName}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300 font-sans">
+                      <p className="text-xs studio-fg-secondary font-sans">
                         {d.message}
                       </p>
-                      <p className="text-[10px] text-zinc-500 font-sans">
+                      <p className="text-[10px] studio-fg-muted font-sans">
                         {d.location}
                       </p>
                     </div>
@@ -369,7 +369,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                         onSelectForm(d.formId);
                         onClose();
                       }}
-                      className="text-[11px] font-mono text-zinc-400 hover:text-white underline ml-1 shrink-0"
+                      className="text-[11px] font-mono studio-fg-muted studio-hover-fg-primary underline ml-1 shrink-0"
                     >
                       Inspect Form →
                     </button>
@@ -381,10 +381,10 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-zinc-800 bg-zinc-950/80 flex justify-end">
+        <div className="px-6 py-3 border-t studio-border-default studio-surface-subtle flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-mono transition-colors"
+            className="px-4 py-1.5 studio-surface-muted studio-hover-active studio-fg-primary rounded-lg text-xs font-mono transition-colors"
           >
             Close Conformance Studio
           </button>

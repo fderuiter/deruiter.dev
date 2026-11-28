@@ -221,7 +221,7 @@ describe("FieldPropertiesTab requirement tiers", () => {
     expect(screen.getByText(/Physically blocks saving/)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Hard Stop" }).className
-    ).toContain("bg-red-500/20");
+    ).toContain("studio-accent-red-strong");
   });
 
   it("treats an unrequired field without a tier as optional", () => {
@@ -232,7 +232,7 @@ describe("FieldPropertiesTab requirement tiers", () => {
     expect(screen.getByText(/May be left blank/)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Optional" }).className
-    ).toContain("bg-zinc-800");
+    ).toContain("studio-surface-muted");
   });
 
   it("describes the auto-query tier when it is set", () => {
@@ -241,7 +241,7 @@ describe("FieldPropertiesTab requirement tiers", () => {
     expect(screen.getByText(/registers an open EDC discrepancy/)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Auto-Query" }).className
-    ).toContain("bg-amber-500/20");
+    ).toContain("studio-accent-amber-strong");
   });
 
   it("highlights explicit optional and hard stop tiers", () => {
@@ -250,11 +250,11 @@ describe("FieldPropertiesTab requirement tiers", () => {
     });
     expect(
       screen.getByRole("button", { name: "Optional" }).className
-    ).toContain("bg-zinc-800");
+    ).toContain("studio-surface-muted");
     rerender({ ...sysbp, required: false, requirementTier: "hard_stop" });
     expect(
       screen.getByRole("button", { name: "Hard Stop" }).className
-    ).toContain("bg-red-500/20");
+    ).toContain("studio-accent-red-strong");
   });
 
   it("emits the tier and required flag for each tier button", () => {
@@ -695,7 +695,7 @@ describe("FieldPropertiesTab custom options builder", () => {
     expect(screen.getByText("3 choices")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /Custom Options \(3\)/ }).className
-    ).toContain("text-brand-cyan");
+    ).toContain("studio-fg-cyan");
     expect(
       screen
         .getAllByPlaceholderText("Choice Label")

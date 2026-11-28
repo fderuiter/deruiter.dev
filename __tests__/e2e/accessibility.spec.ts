@@ -193,6 +193,79 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(page, testInfo, "CRF Studio Default State");
   });
 
+  test("Audit: CRF Studio Clinical Light Mode Across All Modes & Wizard", async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(90000);
+    await page.goto("/crf#theme=light");
+    await page.waitForLoadState("networkidle");
+    const studioRoot = page.locator('[data-studio-theme="light"]');
+    await expect(studioRoot).toBeVisible({ timeout: 15000 });
+    await waitForVisualSettle(page);
+
+    await auditAndAssert(page, testInfo, "CRF Studio Light Mode: designer");
+
+    const modeChecks: Array<{
+      mode: "grid" | "matrix" | "rules" | "edc" | "acrf" | "export";
+      readySelector: string;
+    }> = [
+      { mode: "grid", readySelector: 'h2:has-text("Active Form Grid")' },
+      {
+        mode: "matrix",
+        readySelector:
+          'h2:has-text("Protocol Visit Schedule Matrix (Schedule of Assessments)")',
+      },
+      {
+        mode: "rules",
+        readySelector: 'h2:has-text("Logic Dependency DAG & AST Rule Studio")',
+      },
+      { mode: "edc", readySelector: 'h2:has-text("Live EDC data entry")' },
+      {
+        mode: "acrf",
+        readySelector:
+          'h2:has-text("Visual Annotated CRF (aCRF) Submission Studio")',
+      },
+      {
+        mode: "export",
+        readySelector:
+          'h2:has-text("CDISC Standards & Interoperability Exporter")',
+      },
+    ];
+
+    for (const { mode, readySelector } of modeChecks) {
+      await page.evaluate((nextMode) => {
+        window.location.hash = `theme=light&mode=${nextMode}`;
+      }, mode);
+      await expect(page.locator(readySelector).first()).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(studioRoot).toBeVisible();
+      await waitForVisualSettle(page);
+      await auditAndAssert(page, testInfo, `CRF Studio Light Mode: ${mode}`);
+    }
+
+    // Return to designer in light mode and open WorkflowWizardModal
+    await page.evaluate(() => {
+      window.location.hash = "theme=light";
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    await expect(
+      page.locator('[data-studio-canvas="true"]:visible').first()
+    ).toBeVisible({
+      timeout: 15000,
+    });
+    await page.keyboard.press("F1");
+    await expect(page.locator("#wizard-title")).toBeVisible({
+      timeout: 15000,
+    });
+    await waitForVisualSettle(page);
+    await auditAndAssert(
+      page,
+      testInfo,
+      "CRF Studio Light Mode: WorkflowWizardModal"
+    );
+  });
+
   /**
    * The field manual fades in under framer-motion, which drives opacity through
    * inline style rather than a CSS animation, so the injected `animation: none`

@@ -101,7 +101,7 @@ interface DragState {
 }
 
 const selectClass =
-  "w-full min-w-0 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-white";
+  "w-full min-w-0 px-2 py-1 studio-surface-card border studio-border-default rounded text-xs studio-fg-primary";
 
 /**
  * Optional visual-wire view of a form's sentence rules (#674). It reads and
@@ -369,11 +369,11 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
       <div className="space-y-1">
         <h3
           id="rule-wire-heading"
-          className="text-[11px] font-mono uppercase text-zinc-400 font-semibold"
+          className="text-[11px] font-mono uppercase studio-fg-muted font-semibold"
         >
           Visual wires ({visibleWires.length} connections)
         </h3>
-        <p className="text-[11px] text-zinc-500">
+        <p className="text-[11px] studio-fg-muted">
           The same rules as the sentence view. Choose a source field, then a
           target field, or drag between them. Every connection is also listed
           below.
@@ -390,7 +390,7 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
           drawing wires between their measured positions. */}
       <div
         ref={containerRef}
-        className="relative w-full min-w-0 rounded-xl border border-zinc-800 bg-zinc-950/70 p-2 section-isolate"
+        className="relative w-full min-w-0 rounded-xl border studio-border-default studio-surface-subtle p-2 section-isolate"
         data-testid="rule-wire-diagram"
       >
         <svg
@@ -432,7 +432,7 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
               y1={dragOrigin.y}
               x2={drag.current.x}
               y2={drag.current.y}
-              stroke="#f4f4f6"
+              stroke="var(--studio-fg-primary)"
               strokeDasharray="3 3"
               strokeWidth={1.5}
             />
@@ -445,7 +445,7 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
             role="group"
             aria-label="Source fields"
           >
-            <div className="text-[10px] font-mono uppercase text-zinc-500">
+            <div className="text-[10px] font-mono uppercase studio-fg-muted">
               Sources
             </div>
             {nodeIds.map((id) => (
@@ -461,8 +461,8 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
                 onPointerUp={handlePointerUp}
                 className={`block w-full min-w-0 truncate rounded border px-1.5 py-1 text-left font-mono text-[11px] touch-none active:scale-[0.98] ${
                   armedSourceId === id
-                    ? "border-amber-500 bg-amber-950/40 text-amber-200"
-                    : "border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-zinc-700"
+                    ? "studio-accent-amber"
+                    : "studio-border-default studio-surface-card studio-fg-primary studio-hover-border-strong"
                 }`}
               >
                 {nameOf(id)}
@@ -475,7 +475,7 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
             role="group"
             aria-label="Target fields"
           >
-            <div className="text-[10px] font-mono uppercase text-zinc-500 text-right">
+            <div className="text-[10px] font-mono uppercase studio-fg-muted text-right">
               Targets
             </div>
             {nodeIds.map((id) => (
@@ -492,8 +492,8 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
                 onClick={() => handleTargetActivate(id)}
                 className={`block w-full min-w-0 truncate rounded border px-1.5 py-1 text-right font-mono text-[11px] active:scale-[0.98] ${
                   armedSourceId
-                    ? "border-dashed border-amber-600 bg-zinc-900 text-zinc-100"
-                    : "border-zinc-800 bg-zinc-900 text-zinc-200 hover:border-zinc-700"
+                    ? "border-dashed studio-border-amber studio-surface-card studio-fg-primary"
+                    : "studio-border-default studio-surface-card studio-fg-primary studio-hover-border-strong"
                 }`}
               >
                 {nameOf(id)}
@@ -524,11 +524,11 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
       )}
 
       <div className="space-y-1.5">
-        <h4 className="text-[10px] font-mono uppercase text-zinc-400 font-semibold">
+        <h4 className="text-[10px] font-mono uppercase studio-fg-muted font-semibold">
           Connection list
         </h4>
         {visibleWires.length === 0 ? (
-          <p className="text-[11px] text-zinc-500">No connections yet.</p>
+          <p className="text-[11px] studio-fg-muted">No connections yet.</p>
         ) : (
           <ul className="space-y-1" aria-label="Rule connections">
             {visibleWires.map((wire) => {
@@ -546,8 +546,8 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
                     }}
                     className={`flex w-full min-w-0 items-start gap-2 rounded border px-2 py-1.5 text-left text-[11px] active:scale-[0.98] ${
                       selected
-                        ? "border-zinc-500 bg-zinc-900"
-                        : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                        ? "studio-border-strong studio-surface-card"
+                        : "studio-border-default studio-surface-subtle studio-hover-border-strong"
                     }`}
                   >
                     <span
@@ -558,10 +558,10 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
                         ? style.badge
                         : wire.role.toUpperCase()}
                     </span>
-                    <span className="min-w-0 break-words text-zinc-300">
+                    <span className="min-w-0 break-words studio-fg-secondary">
                       {wire.description}
                       {!wire.editable && wire.readOnlyReason ? (
-                        <span className="block text-zinc-500">
+                        <span className="block studio-fg-muted">
                           {wire.readOnlyReason}
                         </span>
                       ) : null}
@@ -592,7 +592,7 @@ export const RuleWireEditor: React.FC<RuleWireEditorProps> = ({
 
 const WireLegend: React.FC = () => (
   <ul
-    className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-mono text-zinc-400"
+    className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-mono studio-fg-muted"
     aria-label="Wire legend"
   >
     {WIRE_ACTION_TYPES.map((action) => {
@@ -645,11 +645,11 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({
   const [target, setTarget] = useState(fields[1]?.id ?? fields[0]?.id ?? "");
   if (fields.length === 0) return null;
   return (
-    <fieldset className="grid grid-cols-1 @xs:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2 rounded-lg border border-zinc-800 p-2">
-      <legend className="px-1 text-[10px] font-mono uppercase text-zinc-400">
+    <fieldset className="grid grid-cols-1 @xs:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2 rounded-lg border studio-border-default p-2">
+      <legend className="px-1 text-[10px] font-mono uppercase studio-fg-muted">
         New connection
       </legend>
-      <label className="block min-w-0 text-[10px] font-mono text-zinc-500">
+      <label className="block min-w-0 text-[10px] font-mono studio-fg-muted">
         From source
         <select
           value={source}
@@ -663,7 +663,7 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({
           ))}
         </select>
       </label>
-      <label className="block min-w-0 text-[10px] font-mono text-zinc-500">
+      <label className="block min-w-0 text-[10px] font-mono studio-fg-muted">
         To target
         <select
           value={target}
@@ -680,7 +680,7 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({
       <button
         type="button"
         onClick={() => onBegin(source, target)}
-        className="rounded bg-zinc-800 px-2.5 py-1 font-mono text-[11px] text-white hover:bg-zinc-700 active:scale-[0.98]"
+        className="rounded studio-surface-muted px-2.5 py-1 font-mono text-[11px] studio-fg-primary studio-hover-active active:scale-[0.98]"
       >
         Connect
       </button>
@@ -713,12 +713,12 @@ const PendingConnectionPanel: React.FC<PendingConnectionPanelProps> = ({
     <div
       role="group"
       aria-label="Configure new connection"
-      className="space-y-2 rounded-lg border border-amber-700/60 bg-zinc-950 p-2.5"
+      className="space-y-2 rounded-lg border studio-border-amber studio-surface-subtle p-2.5"
     >
-      <p className="text-[11px] font-mono text-zinc-200 break-words">
+      <p className="text-[11px] font-mono studio-fg-primary break-words">
         {nameOf(pending.sourceFieldId)} → {nameOf(pending.targetFieldId)}
       </p>
-      <label className="block text-[10px] font-mono text-zinc-500">
+      <label className="block text-[10px] font-mono studio-fg-muted">
         Action
         <select
           ref={firstControl}
@@ -735,7 +735,7 @@ const PendingConnectionPanel: React.FC<PendingConnectionPanelProps> = ({
         </select>
       </label>
       {candidateRules.length > 0 && (
-        <label className="block text-[10px] font-mono text-zinc-500">
+        <label className="block text-[10px] font-mono studio-fg-muted">
           Add to
           <select
             value={into}
@@ -755,14 +755,14 @@ const PendingConnectionPanel: React.FC<PendingConnectionPanelProps> = ({
         <button
           type="button"
           onClick={() => onCreate(actionType, into)}
-          className="rounded bg-amber-500 px-2.5 py-1 font-mono text-[11px] font-bold text-black active:scale-[0.98]"
+          className="rounded studio-btn-amber px-2.5 py-1 font-mono text-[11px] font-bold active:scale-[0.98]"
         >
           Create connection
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded bg-zinc-800 px-2.5 py-1 font-mono text-[11px] text-zinc-200 active:scale-[0.98]"
+          className="rounded studio-surface-muted px-2.5 py-1 font-mono text-[11px] studio-fg-primary active:scale-[0.98]"
         >
           Cancel
         </button>
@@ -820,14 +820,14 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
     return (
       <li
         key={conditionIndex}
-        className="space-y-1 rounded border border-zinc-800 bg-zinc-900 p-1.5"
+        className="space-y-1 rounded border studio-border-default studio-surface-card p-1.5"
       >
-        <div className="text-[10px] font-mono text-zinc-400 break-words">
+        <div className="text-[10px] font-mono studio-fg-muted break-words">
           {nameOf(condition.fieldId)}
           {condition.crossVisitId ? ` at visit ${condition.crossVisitId}` : ""}
         </div>
         {conditionReadOnly ? (
-          <p className="text-[11px] text-zinc-500 break-words">
+          <p className="text-[11px] studio-fg-muted break-words">
             {OPERATOR_OPTIONS[condition.operator] ??
               `unsupported "${String(condition.operator)}"`}{" "}
             {Array.isArray(condition.value)
@@ -893,7 +893,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
             <button
               type="button"
               onClick={() => onChange(removeWireCondition(rule, location))}
-              className="col-span-2 justify-self-start text-[10px] font-mono text-zinc-400 underline hover:text-red-400"
+              className="col-span-2 justify-self-start text-[10px] font-mono studio-fg-muted underline studio-hover-fg-red"
             >
               Disconnect {nameOf(condition.fieldId)}
             </button>
@@ -907,37 +907,37 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
     <div
       role="region"
       aria-label={`Configure rule ${rule.name}`}
-      className="space-y-2.5 rounded-xl border border-zinc-700 bg-zinc-950/80 p-3"
+      className="space-y-2.5 rounded-xl border studio-border-strong studio-surface-subtle p-3"
       data-testid="rule-wire-config"
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 text-xs font-bold font-mono text-white break-words">
+        <div className="min-w-0 text-xs font-bold font-mono studio-fg-primary break-words">
           {rule.name}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 font-mono text-[11px] text-zinc-300 hover:bg-zinc-800"
+          className="shrink-0 rounded studio-surface-card px-2 py-0.5 font-mono text-[11px] studio-fg-secondary studio-hover-surface"
         >
           Close
         </button>
       </div>
 
       <p
-        className="rounded border border-zinc-800 bg-zinc-900 p-2 text-[11px] text-zinc-200 break-words"
+        className="rounded border studio-border-default studio-surface-card p-2 text-[11px] studio-fg-primary break-words"
         data-testid="rule-wire-sentence"
       >
         {sentence}
       </p>
 
       {readOnly && (
-        <p className="rounded border border-red-800 bg-red-950/40 p-2 text-[11px] text-red-300 break-words">
+        <p className="rounded border studio-accent-red p-2 text-[11px] break-words">
           {readOnlyReason}
         </p>
       )}
 
       <div className="grid grid-cols-1 @xs:grid-cols-2 gap-2">
-        <label className="block min-w-0 text-[10px] font-mono text-zinc-500">
+        <label className="block min-w-0 text-[10px] font-mono studio-fg-muted">
           Action
           <select
             value={rule.actionType}
@@ -958,7 +958,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
             ))}
           </select>
         </label>
-        <label className="block min-w-0 text-[10px] font-mono text-zinc-500">
+        <label className="block min-w-0 text-[10px] font-mono studio-fg-muted">
           Target
           <select
             value={rule.targetFieldId}
@@ -985,7 +985,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
       </div>
 
       {grouped && groups.length > 1 && (
-        <label className="block text-[10px] font-mono text-zinc-500">
+        <label className="block text-[10px] font-mono studio-fg-muted">
           Groups combine with
           <select
             value={rule.groupLogicalOperator ?? "AND"}
@@ -1006,12 +1006,12 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
       {groups.map((group, groupIndex) => (
         <fieldset
           key={group.id}
-          className="space-y-1.5 rounded-lg border border-zinc-800 p-2"
+          className="space-y-1.5 rounded-lg border studio-border-default p-2"
         >
-          <legend className="px-1 text-[10px] font-mono uppercase text-zinc-400">
+          <legend className="px-1 text-[10px] font-mono uppercase studio-fg-muted">
             Group {groupIndex + 1}
           </legend>
-          <label className="block text-[10px] font-mono text-zinc-500">
+          <label className="block text-[10px] font-mono studio-fg-muted">
             Conditions combine with
             <select
               value={group.logicalOperator}
@@ -1032,7 +1032,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
             </select>
           </label>
           {group.conditions.length === 0 ? (
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-[11px] studio-fg-muted">
               No conditions: always true.
             </p>
           ) : (
@@ -1042,7 +1042,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
           )}
           {!readOnly && (
             <div className="flex items-end gap-1.5">
-              <label className="block min-w-0 flex-1 text-[10px] font-mono text-zinc-500">
+              <label className="block min-w-0 flex-1 text-[10px] font-mono studio-fg-muted">
                 Connect another source
                 <select
                   value={addSource}
@@ -1061,7 +1061,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
                 onClick={() =>
                   onChange(connectWireSource(rule, addSource, groupIndex))
                 }
-                className="shrink-0 rounded bg-zinc-800 px-2 py-1 font-mono text-[11px] text-white hover:bg-zinc-700"
+                className="shrink-0 rounded studio-surface-muted px-2 py-1 font-mono text-[11px] studio-fg-primary studio-hover-active"
               >
                 Add to group {groupIndex + 1}
               </button>
@@ -1072,7 +1072,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
 
       {rule.actionType === "raise_query" && (
         <div className="grid grid-cols-1 gap-2">
-          <label className="block text-[10px] font-mono text-zinc-500">
+          <label className="block text-[10px] font-mono studio-fg-muted">
             Query severity
             <select
               value={rule.querySeverity ?? "warning"}
@@ -1092,7 +1092,7 @@ const RuleWireConfig: React.FC<RuleWireConfigProps> = ({
               <option value="error">Hard error</option>
             </select>
           </label>
-          <label className="block text-[10px] font-mono text-zinc-500">
+          <label className="block text-[10px] font-mono studio-fg-muted">
             Query text
             <textarea
               rows={2}

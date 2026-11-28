@@ -112,22 +112,22 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
       onClose={onClose}
       titleId="branding-modal-title"
       maxWidth="max-w-4xl"
-      className="bg-zinc-900 border-zinc-750"
+      className="studio-surface-elevated studio-border-default studio-fg-primary"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950">
+      <div className="flex items-center justify-between px-6 py-4 border-b studio-border-default studio-surface-rail">
         <div className="flex items-center gap-3">
-          <span className="p-2 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">
+          <span className="p-2 rounded-xl studio-accent-cyan border">
             <IconPalette className="w-5 h-5" />
           </span>
           <div>
             <h2
               id="branding-modal-title"
-              className="text-base font-bold text-white font-mono uppercase tracking-wide"
+              className="text-base font-bold studio-fg-primary font-mono uppercase tracking-wide"
             >
               Organization &amp; Sponsor Branding Configurator
             </h2>
-            <p className="text-xs text-zinc-400 font-sans">
+            <p className="text-xs studio-fg-muted font-sans">
               Customize clinical logos, color palettes, headers, footers, and
               confidentiality notices across Studio UI, Word (.docx), and PDF
               exports.
@@ -137,7 +137,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
         <button
           onClick={onClose}
           aria-label="Close branding modal"
-          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          className="p-1.5 rounded-lg studio-fg-muted studio-hover-fg-primary studio-hover-surface transition-colors"
         >
           <IconX className="w-5 h-5" />
         </button>
@@ -148,8 +148,8 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
         {/* Quick Palette Presets */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-zinc-300 font-mono uppercase tracking-wider flex items-center gap-1.5">
-              <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
+            <label className="text-xs font-bold studio-fg-secondary font-mono uppercase tracking-wider flex items-center gap-1.5">
+              <IconSparkles className="w-3.5 h-3.5 studio-fg-cyan" />
               <span>Clinical Palette Presets</span>
             </label>
           </div>
@@ -159,7 +159,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 key={preset.id}
                 type="button"
                 onClick={() => handleApplyPreset(preset.id)}
-                className="p-3 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-800/80 hover:border-zinc-700 text-left transition-all group flex flex-col justify-between space-y-2"
+                className="p-3 rounded-xl border studio-border-default studio-surface-subtle studio-hover-surface studio-hover-border text-left transition-all group flex flex-col justify-between space-y-2"
               >
                 <div className="flex items-center gap-1.5">
                   <span
@@ -172,10 +172,10 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-white font-mono group-hover:text-brand-cyan transition-colors">
+                  <div className="text-xs font-bold studio-fg-primary font-mono studio-group-hover-fg-cyan transition-colors">
                     {preset.name}
                   </div>
-                  <div className="text-[10px] text-zinc-500 line-clamp-1 mt-0.5">
+                  <div className="text-[10px] studio-fg-muted line-clamp-1 mt-0.5">
                     {preset.branding.organizationName}
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
           <div className="space-y-4">
             {/* Organization / Sponsor Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+              <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                 Organization / Sponsor Name
               </label>
               <input
@@ -202,19 +202,19 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   }))
                 }
                 placeholder="e.g. Aura Oncology Therapeutics"
-                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
+                className="w-full px-3 py-2 studio-surface-input border studio-border-default rounded-xl text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none"
               />
             </div>
 
             {/* Logo Uploader */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase flex items-center justify-between">
+              <label className="text-xs font-bold studio-fg-secondary font-mono uppercase flex items-center justify-between">
                 <span>Sponsor Logo (PNG / SVG / JPG)</span>
                 {branding.logoBase64 && (
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
-                    className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 font-mono"
+                    className="text-[10px] studio-fg-red flex items-center gap-1 font-mono"
                   >
                     <IconTrash className="w-3 h-3" />
                     <span>Remove</span>
@@ -229,8 +229,8 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 className="hidden"
               />
               {branding.logoBase64 ? (
-                <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between gap-4">
-                  <div className="bg-white p-1.5 rounded-lg border border-zinc-700 max-w-[140px] max-h-[50px] flex items-center justify-center overflow-hidden">
+                <div className="p-3 studio-surface-subtle border studio-border-default rounded-xl flex items-center justify-between gap-4">
+                  <div className="studio-paper p-1.5 rounded-lg border max-w-[140px] max-h-[50px] flex items-center justify-center overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={branding.logoBase64}
@@ -241,7 +241,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 text-xs font-mono rounded-lg transition-colors"
+                    className="px-3 py-1.5 studio-surface-muted studio-hover-active studio-fg-secondary text-xs font-mono rounded-lg transition-colors"
                   >
                     Change File
                   </button>
@@ -250,16 +250,16 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full p-4 border-2 border-dashed border-zinc-800 hover:border-brand-cyan/60 rounded-xl bg-zinc-950/40 text-center transition-all flex flex-col items-center justify-center gap-1.5 group"
+                  className="w-full p-4 border-2 border-dashed studio-border-default studio-hover-border-cyan rounded-xl studio-surface-subtle text-center transition-all flex flex-col items-center justify-center gap-1.5 group"
                 >
-                  <IconUpload className="w-5 h-5 text-zinc-500 group-hover:text-brand-cyan transition-colors" />
-                  <span className="text-xs font-mono text-zinc-400 group-hover:text-zinc-200">
+                  <IconUpload className="w-5 h-5 studio-fg-muted studio-group-hover-fg-cyan transition-colors" />
+                  <span className="text-xs font-mono studio-fg-muted studio-group-hover-fg-primary">
                     Upload high-res logo (renders in Word &amp; PDF)
                   </span>
                 </button>
               )}
               {logoError && (
-                <div className="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
+                <div className="flex items-center gap-1.5 p-2 rounded-lg studio-accent-red border text-xs font-mono">
                   <IconAlertCircle className="w-4 h-4 shrink-0" />
                   <span>{logoError}</span>
                 </div>
@@ -269,10 +269,10 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
             {/* Color Controls */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+                <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                   Primary Brand Color
                 </label>
-                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
+                <div className="flex items-center gap-2 studio-surface-input border studio-border-default rounded-xl p-1.5">
                   <input
                     type="color"
                     value={branding.primaryColor}
@@ -293,16 +293,16 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                         primaryColor: e.target.value,
                       }))
                     }
-                    className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
+                    className="w-full bg-transparent text-xs font-mono studio-fg-primary focus:outline-none uppercase"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+                <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                   Accent Highlight Color
                 </label>
-                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-1.5">
+                <div className="flex items-center gap-2 studio-surface-input border studio-border-default rounded-xl p-1.5">
                   <input
                     type="color"
                     value={branding.accentColor}
@@ -323,7 +323,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                         accentColor: e.target.value,
                       }))
                     }
-                    className="w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none uppercase"
+                    className="w-full bg-transparent text-xs font-mono studio-fg-primary focus:outline-none uppercase"
                   />
                 </div>
               </div>
@@ -332,7 +332,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
             {/* Running Headers & Footers */}
             <div className="space-y-3 pt-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+                <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                   Header Running Text
                 </label>
                 <input
@@ -345,12 +345,12 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                     }))
                   }
                   placeholder="e.g. CONFIDENTIAL • CLINICAL INVESTIGATION"
-                  className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
+                  className="w-full px-3 py-2 studio-surface-input border studio-border-default rounded-xl text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+                <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                   Footer Running Text
                 </label>
                 <input
@@ -363,7 +363,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                     }))
                   }
                   placeholder={`e.g. Modelled on ${standardCitation("CDASHIG")} (synthetic demo)`}
-                  className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
+                  className="w-full px-3 py-2 studio-surface-input border studio-border-default rounded-xl text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none"
                 />
               </div>
             </div>
@@ -373,7 +373,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
           <div className="space-y-4 flex flex-col justify-between">
             {/* Confidentiality Notice */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-300 font-mono uppercase">
+              <label className="text-xs font-bold studio-fg-secondary font-mono uppercase">
                 Confidentiality Disclaimer
               </label>
               <textarea
@@ -386,24 +386,24 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                   }))
                 }
                 placeholder="Proprietary clinical protocol notice..."
-                className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none resize-none leading-relaxed"
+                className="w-full p-3 studio-surface-input border studio-border-default rounded-xl text-xs font-mono studio-fg-primary studio-focus-input focus:outline-none resize-none leading-relaxed"
               />
             </div>
 
             {/* Live Real-Time Visual Preview Card */}
-            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+            <div className="p-4 rounded-xl studio-surface-subtle border studio-border-default space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-400 font-mono uppercase flex items-center gap-1.5">
-                  <IconEye className="w-3.5 h-3.5 text-brand-cyan" />
+                <span className="text-[11px] font-bold studio-fg-muted font-mono uppercase flex items-center gap-1.5">
+                  <IconEye className="w-3.5 h-3.5 studio-fg-cyan" />
                   <span>Live Document Simulation</span>
                 </span>
-                <span className="text-[10px] font-mono text-zinc-500">
+                <span className="text-[10px] font-mono studio-fg-muted">
                   Auto-synced
                 </span>
               </div>
 
               {/* Mini Paper Document Card */}
-              <div className="bg-white rounded-lg p-3.5 shadow-md border border-zinc-300 text-zinc-900 space-y-2">
+              <div className="studio-paper rounded-lg p-3.5 shadow-md border space-y-2">
                 <div
                   className="pb-2 border-b-2 flex items-center justify-between"
                   style={{ borderColor: branding.primaryColor }}
@@ -423,7 +423,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                     >
                       {branding.organizationName}
                     </div>
-                    <div className="text-[9px] font-mono text-zinc-500">
+                    <div className="text-[9px] font-mono studio-paper-fg-muted">
                       Protocol: ONC-2026-003 • Phase III
                     </div>
                   </div>
@@ -436,32 +436,32 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                 </div>
 
                 {/* Section simulation */}
-                <div className="border border-zinc-200 rounded overflow-hidden">
+                <div className="border studio-paper-border-subtle rounded overflow-hidden">
                   <div
-                    className="px-2 py-1 text-[9px] font-bold text-zinc-800 bg-zinc-100 border-l-2"
+                    className="px-2 py-1 text-[9px] font-bold studio-paper-fg studio-paper-muted border-l-2"
                     style={{ borderLeftColor: branding.primaryColor }}
                   >
                     Section: Demographics &amp; Baseline
                   </div>
-                  <div className="p-2 space-y-1.5 bg-zinc-50">
-                    <div className="relative border border-zinc-200 rounded p-1.5 bg-white">
+                  <div className="p-2 space-y-1.5 studio-paper-subtle">
+                    <div className="relative border studio-paper-border-subtle rounded p-1.5 studio-paper">
                       <div
                         className="absolute -top-1.5 right-1.5 px-1 py-0.2 rounded text-[7px] font-bold text-white font-mono"
                         style={{ backgroundColor: branding.accentColor }}
                       >
                         DM.BRTHYR [HR]
                       </div>
-                      <div className="text-[8px] font-semibold text-zinc-700">
+                      <div className="text-[8px] font-semibold studio-paper-fg-secondary">
                         Year of Birth *
                       </div>
-                      <div className="text-[7px] text-zinc-400 font-mono">
+                      <div className="text-[7px] studio-paper-fg-muted font-mono">
                         _____________________ (YYYY)
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[7px] text-zinc-400 flex items-center justify-between pt-1 border-t border-zinc-100">
+                <div className="text-[7px] studio-paper-fg-muted flex items-center justify-between pt-1 border-t studio-paper-border-subtle">
                   <span>{branding.footerText || "Confidential Protocol"}</span>
                   <span>Page 1 of 12</span>
                 </div>
@@ -472,14 +472,14 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 border-t border-zinc-800 bg-zinc-950">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 border-t studio-border-default studio-surface-rail">
         <button
           type="button"
           onClick={handleSaveDefault}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-mono transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-muted studio-hover-active border studio-border-strong studio-fg-secondary studio-hover-fg-primary text-xs font-mono transition-all"
         >
           {savedSuccess ? (
-            <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <IconCheck className="w-3.5 h-3.5 studio-fg-emerald" />
           ) : (
             <IconDeviceFloppy className="w-3.5 h-3.5" />
           )}
@@ -494,14 +494,14 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-200 font-mono text-xs transition-colors"
+            className="px-4 py-2 rounded-xl studio-fg-muted studio-hover-fg-primary font-mono text-xs transition-colors"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSaveAndClose}
-            className="px-5 py-2 bg-brand-cyan text-black hover:bg-white font-mono text-xs font-bold rounded-xl transition-all shadow-md"
+            className="px-5 py-2 studio-btn-cyan font-mono text-xs font-bold rounded-xl transition-all shadow-md"
           >
             Apply Branding
           </button>

@@ -69,12 +69,12 @@ describe("InspectorPanel field switching", () => {
     const { rerender } = render(panel(customRadio));
     expect(
       screen.getByRole("button", { name: /Custom Options \(2\)/ }).className
-    ).toContain("text-brand-cyan");
+    ).toContain("studio-fg-cyan");
 
     rerender(panel(sex));
     expect(
       screen.getByRole("button", { name: /Standard Codelist/ }).className
-    ).toContain("text-brand-cyan");
+    ).toContain("studio-fg-cyan");
     expect(screen.getByText("Preview Choices:")).toBeTruthy();
     for (const opt of sexCodelist.options) {
       expect(screen.getByText(`(${opt.code})`)).toBeTruthy();

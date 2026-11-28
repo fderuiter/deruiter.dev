@@ -856,19 +856,20 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
       onPaste={handlePaste}
       tabIndex={0}
       aria-label="Active Form Grid"
-      className="flex-1 flex flex-col h-full bg-zinc-950/90 crf-canvas-area overflow-hidden p-3 sm:p-6 transition-all relative focus:outline-none"
+      className="flex-1 flex flex-col h-full studio-surface-canvas crf-canvas-area overflow-hidden p-3 sm:p-6 transition-all relative focus:outline-none"
     >
       {/* Grid Controls Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b studio-border-default">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <IconTable className="w-4 h-4 text-brand-cyan" />
-            <span className="font-mono text-xs font-bold text-zinc-200">
+            <IconTable className="w-4 h-4 studio-fg-cyan" />
+            <h2 className="font-mono text-xs font-bold studio-fg-primary">
               Active Form Grid
-            </span>
+            </h2>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
-            Form: <span className="text-zinc-200 font-bold">{form.name}</span> (
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded studio-surface-card studio-fg-muted border studio-border-default">
+            Form:{" "}
+            <span className="studio-fg-primary font-bold">{form.name}</span> (
             {rows.length} fields)
           </span>
         </div>
@@ -877,9 +878,9 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
           {onSwitchMode && (
             <button
               onClick={() => onSwitchMode("designer")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-mono transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-surface-card studio-hover-surface border studio-border-default studio-fg-secondary text-xs font-mono transition-all"
             >
-              <IconLayoutGrid className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconLayoutGrid className="w-3.5 h-3.5 studio-fg-cyan" />
               <span>Canvas View</span>
             </button>
           )}
@@ -893,7 +894,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
               setPendingBatchUpdates(batch);
               setPasteModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-accent-cyan studio-hover-bg-cyan border text-xs font-mono transition-all"
           >
             <IconClipboard className="w-3.5 h-3.5" />
             <span>Paste / Fill</span>
@@ -903,7 +904,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             <button
               type="button"
               onClick={() => onAddField()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-cyan text-zinc-950 hover:bg-brand-cyan/90 text-xs font-mono font-bold transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl studio-btn-cyan text-xs font-mono font-bold transition-all"
             >
               <IconPlus className="w-3.5 h-3.5" />
               <span>Add Field</span>
@@ -913,14 +914,19 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
       </div>
 
       {/* Spreadsheet Table Container */}
-      <div className="flex-1 overflow-auto rounded-xl border border-zinc-800/80 bg-zinc-950 shadow-inner">
-        <table className="w-full text-left border-collapse font-mono text-xs text-zinc-300">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label="Form fields spreadsheet"
+        className="flex-1 overflow-auto rounded-xl border studio-border-default studio-surface-subtle shadow-inner"
+      >
+        <table className="w-full text-left border-collapse font-mono text-xs studio-fg-secondary">
           <caption className="sr-only">Form Fields Spreadsheet Grid</caption>
           <thead>
-            <tr className="bg-zinc-900/90 text-zinc-400 border-b border-zinc-800 text-[11px] uppercase tracking-wider sticky top-0 z-10">
+            <tr className="studio-surface-card studio-fg-muted border-b studio-border-default text-[11px] uppercase tracking-wider sticky top-0 z-10">
               <th
                 scope="col"
-                className="py-2.5 px-3 font-semibold text-zinc-500 border-r border-zinc-800 w-10 text-center"
+                className="py-2.5 px-3 font-semibold studio-fg-muted border-r studio-border-default w-10 text-center"
               >
                 #
               </th>
@@ -928,7 +934,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                 <th
                   key={col.key}
                   scope="col"
-                  className={`py-2.5 px-3 font-semibold border-r border-zinc-800/80 ${col.width}`}
+                  className={`py-2.5 px-3 font-semibold border-r studio-border-default ${col.width}`}
                 >
                   {col.label}
                 </th>
@@ -936,19 +942,19 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-800/60">
+          <tbody className="divide-y studio-divide-subtle">
             {rows.map((row, rIdx) => {
               const isRowSelected = row.field.id === selectedFieldId;
 
               return (
                 <tr
                   key={row.field.id}
-                  className={`transition-colors hover:bg-zinc-900/50 ${
-                    isRowSelected ? "bg-brand-cyan/5" : ""
+                  className={`transition-colors studio-hover-subtle ${
+                    isRowSelected ? "studio-bg-cyan" : ""
                   }`}
                 >
                   {/* Row index */}
-                  <td className="py-2 px-3 text-center text-zinc-600 border-r border-zinc-800 text-[10px] font-mono">
+                  <td className="py-2 px-3 text-center studio-fg-muted border-r studio-border-default text-[10px] font-mono">
                     {rIdx + 1}
                   </td>
 
@@ -967,9 +973,9 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                         key={col.key}
                         onClick={() => handleCellClick(rIdx, cIdx)}
                         onDoubleClick={() => handleCellDoubleClick(rIdx, cIdx)}
-                        className={`py-1.5 px-3 border-r border-zinc-800/80 relative cursor-pointer select-none transition-all ${
+                        className={`py-1.5 px-3 border-r studio-border-default relative cursor-pointer select-none transition-all ${
                           isCellActive
-                            ? "ring-2 ring-brand-cyan ring-inset bg-zinc-900/80 z-1"
+                            ? "ring-2 studio-ring-cyan ring-inset studio-surface-card z-1"
                             : ""
                         }`}
                       >
@@ -987,7 +993,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                               onBlur={() =>
                                 commitCellEdit(rIdx, cIdx, editingCell.value)
                               }
-                              className="w-full bg-zinc-900 text-brand-cyan border border-brand-cyan/60 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
+                              className="w-full studio-surface-card studio-fg-cyan border studio-border-cyan rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
                             >
                               {col.options.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -1008,7 +1014,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                               onBlur={() =>
                                 commitCellEdit(rIdx, cIdx, editingCell.value)
                               }
-                              className="w-full bg-zinc-900 text-brand-cyan border border-brand-cyan/60 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
+                              className="w-full studio-surface-card studio-fg-cyan border studio-border-cyan rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
                             >
                               <option value="true">true (Required)</option>
                               <option value="false">false (Optional)</option>
@@ -1027,36 +1033,36 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                               onBlur={() =>
                                 commitCellEdit(rIdx, cIdx, editingCell.value)
                               }
-                              className="w-full bg-zinc-900 text-brand-cyan border border-brand-cyan/60 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
+                              className="w-full studio-surface-card studio-fg-cyan border studio-border-cyan rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
                             />
                           )
                         ) : col.key === "id" ? (
-                          <span className="font-mono text-[10px] text-zinc-500 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <span className="font-mono text-[10px] studio-fg-muted studio-surface-card px-1.5 py-0.5 rounded border studio-border-default">
                             {cellVal}
                           </span>
                         ) : col.key === "variableName" ? (
-                          <span className="font-mono font-bold text-brand-cyan">
+                          <span className="font-mono font-bold studio-fg-cyan">
                             {cellVal}
                           </span>
                         ) : col.key === "required" ? (
                           <span
                             className={`inline-block text-[10px] px-1.5 py-0.2 rounded ${
                               cellVal === "true"
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                                : "bg-zinc-800 text-zinc-500 border border-zinc-800"
+                                ? "studio-accent-emerald border"
+                                : "studio-surface-muted studio-fg-muted border studio-border-default"
                             }`}
                           >
                             {cellVal === "true" ? "Required" : "Optional"}
                           </span>
                         ) : col.key === "codelistId" ? (
-                          <span className="text-zinc-400 italic text-[11px]">
+                          <span className="studio-fg-muted italic text-[11px]">
                             {col.options?.find((o) => o.value === cellVal)
                               ?.label ||
                               cellVal ||
                               "—"}
                           </span>
                         ) : col.key === "dataType" ? (
-                          <span className="text-zinc-300 text-[11px] px-1.5 py-0.5 bg-zinc-900 rounded border border-zinc-800">
+                          <span className="studio-fg-secondary text-[11px] px-1.5 py-0.5 studio-surface-card rounded border studio-border-default">
                             {cellVal}
                           </span>
                         ) : (
@@ -1077,7 +1083,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
       {/* Batch Paste Preview Modal */}
       {pasteModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center studio-surface-scrim backdrop-blur-sm p-4"
           role="presentation"
         >
           <div
@@ -1085,14 +1091,14 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="paste-modal-title"
-            className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            className="studio-surface-elevated border studio-border-default rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
           >
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+            <div className="p-4 border-b studio-border-default flex items-center justify-between studio-surface-subtle">
               <div className="flex items-center gap-2">
-                <IconSparkles className="w-5 h-5 text-brand-cyan" />
+                <IconSparkles className="w-5 h-5 studio-fg-cyan" />
                 <h3
                   id="paste-modal-title"
-                  className="font-mono text-sm font-bold text-zinc-100"
+                  className="font-mono text-sm font-bold studio-fg-primary"
                 >
                   Batch Metadata Paste Validation &amp; Preview
                 </h3>
@@ -1101,7 +1107,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                 type="button"
                 onClick={() => setPasteModalOpen(false)}
                 aria-label="Close dialog"
-                className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-zinc-800"
+                className="studio-fg-muted studio-hover-fg-primary p-1 rounded-lg studio-hover-surface"
               >
                 <IconX className="w-4 h-4" />
               </button>
@@ -1110,7 +1116,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             <div className="p-4 flex-1 overflow-y-auto space-y-4">
               {/* Paste Raw Textarea Input */}
               <div>
-                <label className="block text-xs font-mono text-zinc-400 mb-1">
+                <label className="block text-xs font-mono studio-fg-muted mb-1">
                   Raw Clipboard Data (Tab or Comma Separated):
                 </label>
                 <textarea
@@ -1127,7 +1133,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                     setPendingBatchUpdates(batch);
                   }}
                   placeholder="Paste TSV/CSV text here (e.g., SYSBP&#9;Systolic BP&#9;integer&#9;true&#9;mmHg&#9;6)"
-                  className="w-full h-24 bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-xl p-3 font-mono text-xs focus:outline-none focus:border-brand-cyan"
+                  className="w-full h-24 studio-surface-card studio-fg-primary border studio-border-default rounded-xl p-3 font-mono text-xs focus:outline-none studio-focus-input"
                 />
               </div>
 
@@ -1135,15 +1141,15 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
               <div
                 className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
                   invalidCount > 0
-                    ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
-                    : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    ? "studio-accent-red"
+                    : "studio-accent-emerald"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {invalidCount > 0 ? (
-                    <IconAlertTriangle className="w-4 h-4 text-rose-400" />
+                    <IconAlertTriangle className="w-4 h-4 studio-fg-red" />
                   ) : (
-                    <IconCheck className="w-4 h-4 text-emerald-400" />
+                    <IconCheck className="w-4 h-4 studio-fg-emerald" />
                   )}
                   <span>
                     Batch Summary: {pendingBatchUpdates.length} cells to update
@@ -1151,30 +1157,42 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                   </span>
                 </div>
                 {invalidCount > 0 && (
-                  <span className="text-[11px] font-semibold text-rose-400">
+                  <span className="text-[11px] font-semibold studio-fg-red">
                     Fix invalid cell data before committing batch
                   </span>
                 )}
               </div>
 
               {/* Updates Table Preview */}
-              <div className="border border-zinc-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
-                <table className="w-full text-left font-mono text-xs text-zinc-300">
+              <div className="border studio-border-default rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                <table className="w-full text-left font-mono text-xs studio-fg-secondary">
                   <caption className="sr-only">
                     Batch Paste Preview Updates
                   </caption>
-                  <thead className="bg-zinc-900 text-zinc-400 text-[10px] uppercase">
+                  <thead className="studio-surface-card studio-fg-muted text-[10px] uppercase">
                     <tr>
-                      <th scope="col" className="p-2 border-r border-zinc-800">
+                      <th
+                        scope="col"
+                        className="p-2 border-r studio-border-default"
+                      >
                         Target Field
                       </th>
-                      <th scope="col" className="p-2 border-r border-zinc-800">
+                      <th
+                        scope="col"
+                        className="p-2 border-r studio-border-default"
+                      >
                         Column
                       </th>
-                      <th scope="col" className="p-2 border-r border-zinc-800">
+                      <th
+                        scope="col"
+                        className="p-2 border-r studio-border-default"
+                      >
                         Current Value
                       </th>
-                      <th scope="col" className="p-2 border-r border-zinc-800">
+                      <th
+                        scope="col"
+                        className="p-2 border-r studio-border-default"
+                      >
                         Pasted Value
                       </th>
                       <th scope="col" className="p-2">
@@ -1182,33 +1200,33 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800">
+                  <tbody className="divide-y studio-divide-default">
                     {pendingBatchUpdates.map((upd, idx) => (
                       <tr
                         key={idx}
                         className={
-                          upd.isValid ? "hover:bg-zinc-900/40" : "bg-rose-500/5"
+                          upd.isValid ? "studio-hover-subtle" : "studio-bg-red"
                         }
                       >
-                        <td className="p-2 border-r border-zinc-800 font-bold text-brand-cyan">
+                        <td className="p-2 border-r studio-border-default font-bold studio-fg-cyan">
                           {upd.fieldVar}
                         </td>
-                        <td className="p-2 border-r border-zinc-800 text-zinc-400">
+                        <td className="p-2 border-r studio-border-default studio-fg-muted">
                           {upd.colLabel}
                         </td>
-                        <td className="p-2 border-r border-zinc-800 text-zinc-500">
+                        <td className="p-2 border-r studio-border-default studio-fg-muted">
                           {upd.oldValue || "—"}
                         </td>
-                        <td className="p-2 border-r border-zinc-800 font-semibold text-zinc-200">
+                        <td className="p-2 border-r studio-border-default font-semibold studio-fg-primary">
                           {upd.newValue}
                         </td>
                         <td className="p-2">
                           {upd.isValid ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                            <span className="inline-flex items-center gap-1 text-[10px] studio-fg-emerald font-bold">
                               <IconCheck className="w-3 h-3" /> Valid
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-rose-400 font-bold">
+                            <span className="inline-flex items-center gap-1 text-[10px] studio-fg-red font-bold">
                               <IconAlertTriangle className="w-3 h-3" />{" "}
                               {upd.error}
                             </span>
@@ -1222,11 +1240,11 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
             </div>
 
             {/* Action Bar */}
-            <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex items-center justify-between">
+            <div className="p-4 border-t studio-border-default studio-surface-subtle flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setPasteModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-all"
+                className="px-4 py-2 rounded-xl studio-surface-muted studio-hover-active studio-fg-secondary text-xs font-mono transition-all"
               >
                 Cancel
               </button>
@@ -1235,7 +1253,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
                 type="button"
                 disabled={invalidCount > 0 || pendingBatchUpdates.length === 0}
                 onClick={commitBatchUpdates}
-                className="px-5 py-2 rounded-xl bg-brand-cyan text-zinc-950 font-bold text-xs font-mono hover:bg-brand-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+                className="px-5 py-2 rounded-xl studio-btn-cyan font-bold text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
               >
                 Commit Batch ({pendingBatchUpdates.length} Updates)
               </button>

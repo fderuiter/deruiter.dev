@@ -71,14 +71,14 @@ function ItemContent({
       {/* A space, so the label and badge read as two words. */}
       {action.badge !== undefined && " "}
       {action.badge !== undefined && (
-        <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-300">
+        <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded studio-surface-muted studio-fg-secondary">
           {action.badge}
         </span>
       )}
       {action.checked !== undefined && (
         <IconCheck
           aria-hidden="true"
-          className={`w-3.5 h-3.5 shrink-0 text-brand-cyan ${
+          className={`w-3.5 h-3.5 shrink-0 studio-fg-cyan ${
             action.checked ? "" : "invisible"
           }`}
         />
@@ -89,7 +89,7 @@ function ItemContent({
         <kbd
           aria-hidden="true"
           data-shortcut={item.shortcut}
-          className="shrink-0 text-[10px] font-mono text-zinc-400 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800 after:content-[attr(data-shortcut)]"
+          className="shrink-0 text-[10px] font-mono studio-fg-muted studio-surface-subtle px-1 py-0.5 rounded border studio-border-default after:content-[attr(data-shortcut)]"
         />
       )}
     </>
@@ -281,19 +281,19 @@ export function StudioHeaderMenus({
               }
               onClick={() => (isOpen ? close() : open(menu.id, null))}
               onKeyDown={(event) => onTriggerKeyDown(event, menu.id)}
-              className={`min-h-8 pointer-coarse:min-h-11 px-2.5 py-1 text-xs font-mono font-medium rounded-lg border transition-colors inline-flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+              className={`min-h-8 pointer-coarse:min-h-11 px-2.5 py-1 text-xs font-mono font-medium rounded-lg border transition-colors inline-flex items-center gap-1.5 outline-none focus-visible:ring-2 studio-focus-ring ${
                 isOpen
-                  ? "bg-zinc-800 text-white border-zinc-700"
+                  ? "studio-surface-active studio-fg-primary studio-border-strong"
                   : isCheck && hasIssues
-                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                    : "border-transparent text-zinc-300 hover:text-white hover:bg-zinc-900"
+                    ? "studio-accent-amber studio-hover-amber"
+                    : "border-transparent studio-fg-secondary studio-hover-fg-primary studio-hover-surface"
               }`}
             >
               <span>{menu.label}</span>
               {isCheck && checkBadge}
               <IconChevronDown
                 aria-hidden="true"
-                className={`w-3 h-3 text-zinc-400 transition-transform ${
+                className={`w-3 h-3 studio-fg-muted transition-transform ${
                   isOpen ? "rotate-180" : ""
                 }`}
               />
@@ -307,7 +307,7 @@ export function StudioHeaderMenus({
               role="menu"
               aria-labelledby={triggerId}
               hidden={!isOpen}
-              className="absolute left-0 top-full mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50"
+              className="absolute left-0 top-full mt-1.5 w-72 max-w-[calc(100vw-2rem)] studio-surface-elevated border studio-border-default rounded-xl shadow-2xl p-1.5 z-50"
             >
               {menu.items.map((item) => {
                 const action = actions[item.id];
@@ -317,7 +317,7 @@ export function StudioHeaderMenus({
                     {item.dividerBefore && (
                       <div
                         role="separator"
-                        className="my-1 border-t border-zinc-800"
+                        className="my-1 border-t studio-border-subtle"
                       />
                     )}
                     <TooltipButton
@@ -339,7 +339,7 @@ export function StudioHeaderMenus({
                         action.run?.();
                       }}
                       onKeyDown={(event) => onItemKeyDown(event, menu.id)}
-                      className="w-full min-h-9 pointer-coarse:min-h-11 flex items-center gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left text-zinc-200 transition-colors outline-none hover:text-white hover:bg-zinc-800 focus:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-brand-cyan disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      className="w-full min-h-9 pointer-coarse:min-h-11 flex items-center gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left studio-fg-primary transition-colors outline-none studio-hover-surface focus-visible:ring-1 studio-focus-ring disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <ItemContent
                         item={item}
@@ -384,7 +384,7 @@ export function StudioActionsDrawer({
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="min-h-8 pointer-coarse:min-h-11 min-w-8 pointer-coarse:min-w-11 justify-center p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 shrink-0"
+        className="min-h-8 pointer-coarse:min-h-11 min-w-8 pointer-coarse:min-w-11 justify-center p-1.5 rounded-lg studio-surface-subtle studio-hover-surface studio-fg-secondary studio-hover-fg-primary border studio-border-default transition-colors inline-flex items-center gap-1 shrink-0"
         tooltip="More Actions & Tools"
         aria-label="More Studio Actions"
         aria-haspopup="dialog"
@@ -394,7 +394,7 @@ export function StudioActionsDrawer({
         {hasIssues && (
           <span
             aria-hidden="true"
-            className="w-2 h-2 rounded-full bg-amber-400"
+            className="w-2 h-2 rounded-full studio-dot-amber"
           />
         )}
       </TooltipButton>
@@ -402,7 +402,7 @@ export function StudioActionsDrawer({
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-40 studio-surface-scrim"
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
@@ -412,16 +412,16 @@ export function StudioActionsDrawer({
             aria-modal="true"
             aria-label="Studio Actions"
             tabIndex={-1}
-            className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[75dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 space-y-3 outline-none"
+            className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[75dvh] overflow-y-auto studio-surface-elevated border studio-border-default rounded-2xl shadow-2xl p-3 z-50 space-y-3 outline-none"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800 px-1">
-              <span className="text-xs font-bold font-mono text-zinc-300 uppercase">
+            <div className="flex items-center justify-between pb-2 border-b studio-border-subtle px-1">
+              <span className="text-xs font-bold font-mono studio-fg-secondary uppercase">
                 Studio Actions
               </span>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="min-h-8 min-w-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center text-zinc-400 hover:text-white rounded"
+                className="min-h-8 min-w-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11 inline-flex items-center justify-center studio-fg-muted studio-hover-fg-primary rounded"
                 aria-label="Close Studio Actions"
               >
                 <IconX aria-hidden="true" className="w-3.5 h-3.5" />
@@ -436,7 +436,7 @@ export function StudioActionsDrawer({
               >
                 <h2
                   id={`studio-drawer-${menu.id}`}
-                  className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 px-1"
+                  className="text-[10px] font-mono font-bold uppercase tracking-wider studio-fg-muted px-1"
                 >
                   {menu.label}
                 </h2>
@@ -457,7 +457,7 @@ export function StudioActionsDrawer({
                         setIsOpen(false);
                         action.run?.();
                       }}
-                      className="w-full min-h-9 pointer-coarse:min-h-11 flex items-center gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left text-zinc-200 transition-colors hover:text-white hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full min-h-9 pointer-coarse:min-h-11 flex items-center gap-2 px-2.5 py-1.5 text-xs font-mono rounded-lg text-left studio-fg-primary transition-colors studio-hover-surface active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <ItemContent
                         item={item}

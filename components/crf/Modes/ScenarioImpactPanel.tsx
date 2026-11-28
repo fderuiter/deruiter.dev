@@ -38,11 +38,11 @@ interface ScenarioImpactPanelProps {
 }
 
 const STANDING_TONE: Record<ScenarioImpactStanding, string> = {
-  passing: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-  failing: "text-red-400 border-red-500/30 bg-red-500/10",
-  stale: "text-amber-400 border-amber-500/30 bg-amber-500/10",
-  unknown: "text-zinc-300 border-zinc-700 bg-zinc-900",
-  never_run: "text-zinc-400 border-zinc-800 bg-zinc-950",
+  passing: "studio-accent-emerald",
+  failing: "studio-accent-red",
+  stale: "studio-accent-amber",
+  unknown: "studio-fg-secondary studio-border-strong studio-surface-card",
+  never_run: "studio-fg-muted studio-border-default studio-surface-subtle",
 };
 
 const STANDING_LABEL: Record<ScenarioImpactStanding, string> = {
@@ -54,7 +54,7 @@ const STANDING_LABEL: Record<ScenarioImpactStanding, string> = {
 };
 
 const BUTTON =
-  "inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[48px] rounded-lg text-[11px] font-mono bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[48px] rounded-lg text-[11px] font-mono studio-surface-subtle studio-hover-surface studio-fg-secondary border studio-border-default transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 studio-focus-ring disabled:opacity-50 disabled:cursor-not-allowed";
 
 function rowId(scenarioId: string): string {
   return `scenario-impact-${scenarioId}`;
@@ -188,22 +188,22 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
     <section
       aria-label="Saved test impact"
       data-testid="scenario-impact-panel"
-      className="@container border-t border-zinc-800 bg-zinc-950 text-zinc-200 flex flex-col max-h-[40vh] min-h-0 relative z-20"
+      className="@container border-t studio-border-default studio-surface-subtle studio-fg-primary flex flex-col max-h-[40vh] min-h-0 relative z-20"
     >
-      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-zinc-900/90 border-b border-zinc-800 shrink-0 flex-wrap">
-        <h2 className="flex items-center gap-2 min-w-0 text-xs font-bold text-white tracking-wide">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 studio-surface-card border-b studio-border-default shrink-0 flex-wrap">
+        <h2 className="flex items-center gap-2 min-w-0 text-xs font-bold studio-fg-primary tracking-wide">
           <IconHistory
-            className="w-4 h-4 text-amber-400 shrink-0"
+            className="w-4 h-4 studio-fg-amber shrink-0"
             aria-hidden
           />
           <span className="truncate">Saved tests</span>
         </h2>
         <p
-          className="text-[10px] font-mono text-zinc-400 flex flex-wrap gap-x-2 min-w-0"
+          className="text-[10px] font-mono studio-fg-muted flex flex-wrap gap-x-2 min-w-0"
           data-testid="scenario-impact-counts"
         >
           <span>{counts.current} current</span>
-          <span className={counts.stale > 0 ? "text-amber-400" : undefined}>
+          <span className={counts.stale > 0 ? "studio-fg-amber" : undefined}>
             {counts.stale} stale
           </span>
           {counts.unknown > 0 && <span>{counts.unknown} unverified</span>}
@@ -239,7 +239,7 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
               <div className="min-w-0 flex-1">
                 <label
                   htmlFor="scenario-impact-name"
-                  className="block text-[10px] font-mono uppercase tracking-wide text-zinc-500 mb-1"
+                  className="block text-[10px] font-mono uppercase tracking-wide studio-fg-muted mb-1"
                 >
                   Save current dock run as a test
                 </label>
@@ -249,7 +249,7 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
                   value={draftName}
                   placeholder={`${form.name} test`}
                   onChange={(e) => setDraftName(e.target.value)}
-                  className="w-full px-2.5 py-1.5 min-h-[48px] text-xs bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-brand-cyan focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan"
+                  className="w-full px-2.5 py-1.5 min-h-[48px] text-xs studio-surface-card border studio-border-strong rounded-lg studio-fg-primary studio-focus-input focus:outline-none focus-visible:ring-2 studio-focus-ring"
                 />
               </div>
               <button
@@ -265,7 +265,7 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
           )}
 
           {report.assessments.length === 0 ? (
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-[11px] studio-fg-muted">
               No saved tests yet. Fill the dock, then save the run to pin its
               outcomes; later amendments will show which saved tests they
               affect.
@@ -274,22 +274,22 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
             <>
               {report.changedObjects.length > 0 && (
                 <div>
-                  <h3 className="text-[10px] font-mono uppercase tracking-wide text-zinc-500 mb-1.5">
+                  <h3 className="text-[10px] font-mono uppercase tracking-wide studio-fg-muted mb-1.5">
                     Amended objects
                   </h3>
                   <ul className="space-y-1.5" aria-label="Amended objects">
                     {report.changedObjects.map((object) => (
                       <li
                         key={`${object.dependency.key}-${object.change}-${object.affectedScenarioIds.join(",")}`}
-                        className="rounded-lg border border-amber-500/30 bg-zinc-950 p-2 min-w-0"
+                        className="rounded-lg border studio-border-amber studio-surface-subtle p-2 min-w-0"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[11px] text-zinc-200 break-words min-w-0">
-                            <span className="font-mono text-zinc-500">
+                          <span className="text-[11px] studio-fg-primary break-words min-w-0">
+                            <span className="font-mono studio-fg-muted">
                               {object.dependency.kind}
                             </span>{" "}
                             {object.objectLabel}
-                            <span className="text-amber-400">
+                            <span className="studio-fg-amber">
                               {" "}
                               {object.change === "changed"
                                 ? `(${object.aspects.join(", ")} changed)`
@@ -308,14 +308,14 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
                             </button>
                           )}
                         </div>
-                        <p className="text-[10px] text-zinc-500 mt-1 flex flex-wrap gap-1 items-center">
+                        <p className="text-[10px] studio-fg-muted mt-1 flex flex-wrap gap-1 items-center">
                           <span>Affects:</span>
                           {object.affectedScenarioIds.map((scenarioId) => (
                             <button
                               key={scenarioId}
                               type="button"
                               onClick={() => focusScenarioRow(scenarioId)}
-                              className="underline decoration-dotted text-zinc-300 hover:text-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded px-1 inline-flex items-center min-h-[48px] break-words"
+                              className="underline decoration-dotted studio-fg-secondary studio-hover-fg-amber focus:outline-none focus-visible:ring-2 studio-focus-ring rounded px-1 inline-flex items-center min-h-[48px] break-words"
                             >
                               {scenarioNames.get(scenarioId) ?? scenarioId}
                             </button>
@@ -329,7 +329,7 @@ export const ScenarioImpactPanel: React.FC<ScenarioImpactPanelProps> = ({
 
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                  <h3 className="text-[10px] font-mono uppercase tracking-wide text-zinc-500">
+                  <h3 className="text-[10px] font-mono uppercase tracking-wide studio-fg-muted">
                     Tests
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
@@ -402,7 +402,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
       id={rowId(assessment.scenarioId)}
       tabIndex={-1}
       data-freshness={assessment.freshness}
-      className="rounded-lg border border-zinc-800 bg-zinc-950 p-2 min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan"
+      className="rounded-lg border studio-border-default studio-surface-subtle p-2 min-w-0 focus:outline-none focus-visible:ring-2 studio-focus-ring"
     >
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -415,7 +415,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
         />
         <label
           htmlFor={checkboxId}
-          className="text-[11px] font-semibold text-zinc-200 break-words min-w-0 flex-1"
+          className="text-[11px] font-semibold studio-fg-primary break-words min-w-0 flex-1"
         >
           {assessment.scenarioName}
         </label>
@@ -430,7 +430,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
             onClick={() =>
               onNavigate({ mode: "designer", formId: assessment.formId })
             }
-            className="text-[10px] font-mono text-zinc-400 hover:text-brand-cyan underline decoration-dotted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded px-1 inline-flex items-center min-h-[48px]"
+            className="text-[10px] font-mono studio-fg-muted studio-hover-fg-cyan underline decoration-dotted focus:outline-none focus-visible:ring-2 studio-focus-ring rounded px-1 inline-flex items-center min-h-[48px]"
             aria-label={`Open the form for ${assessment.scenarioName}`}
           >
             Open form
@@ -439,7 +439,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
       </div>
 
       {lastRun && (
-        <p className="text-[10px] font-mono text-zinc-500 mt-1 break-words">
+        <p className="text-[10px] font-mono studio-fg-muted mt-1 break-words">
           {isCurrent
             ? `${lastRun.passed} of ${lastRun.passed + lastRun.failed} expectations met on ${lastRun.ranAt.slice(0, 10)}.`
             : `Previous run on ${lastRun.ranAt.slice(0, 10)} is not current verification.`}
@@ -447,7 +447,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
       )}
 
       {assessment.freshness === "unknown" && (
-        <p className="text-[10px] text-zinc-400 mt-1">
+        <p className="text-[10px] studio-fg-muted mt-1">
           Recorded before dependency tracking. Fields and rules are unchanged,
           but codelist and visit changes cannot be ruled out; rerun to confirm.
         </p>
@@ -458,7 +458,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
           {assessment.reasons.map((reason) => (
             <li
               key={`${reason.dependency.key}-${reason.change}`}
-              className="flex flex-wrap items-center gap-2 text-[10px] text-amber-300 min-w-0"
+              className="flex flex-wrap items-center gap-2 text-[10px] studio-fg-amber min-w-0"
             >
               <span className="break-words min-w-0 flex-1">
                 {reason.message}
@@ -467,7 +467,7 @@ const ScenarioRow: React.FC<ScenarioRowProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate(reason.navigation)}
-                  className="font-mono text-zinc-300 hover:text-brand-cyan underline decoration-dotted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan rounded px-1 inline-flex items-center min-h-[48px]"
+                  className="font-mono studio-fg-secondary studio-hover-fg-cyan underline decoration-dotted focus:outline-none focus-visible:ring-2 studio-focus-ring rounded px-1 inline-flex items-center min-h-[48px]"
                   aria-label={`Go to ${reason.dependency.kind} ${reason.objectLabel}`}
                 >
                   Go to {reason.dependency.kind}

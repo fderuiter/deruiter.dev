@@ -1,10 +1,6 @@
 import { designManifest } from "./design-manifest";
 import { logger } from "@/lib/logger";
 import { prepare, layout, type PreparedText } from "@chenglou/pretext";
-import {
-  type PreparedRichInline,
-  type RichInlineLine,
-} from "@chenglou/pretext/rich-inline";
 import { LRUCache, toCanvasFontFamily } from "./graphics-math";
 
 export * from "./graphics-math";
@@ -14,13 +10,6 @@ export const textPrepareCache = new LRUCache<string, PreparedText>(500);
 export const textLayoutCache = new LRUCache<
   string,
   { height: number; lineCount: number }
->(2000);
-
-export const richItemsCache = new LRUCache<string, unknown[]>(500);
-export const richPrepareCache = new LRUCache<string, PreparedRichInline>(500);
-export const richLayoutCache = new LRUCache<
-  string,
-  { height: number; lines: RichInlineLine[] }
 >(2000);
 
 // Bounded style and font caches with strict capacity limits to avoid memory growth

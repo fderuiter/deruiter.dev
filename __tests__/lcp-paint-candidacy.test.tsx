@@ -75,21 +75,21 @@ describe("[#817] LCP paint candidacy & hydration render delay", () => {
   });
 
   describe("Pretext layout drift validation never measures in production", () => {
-    it("gates both getBoundingClientRect diagnostics behind isLayoutValidationEnabled", () => {
+    it("gates getBoundingClientRect diagnostic behind isLayoutValidationEnabled", () => {
       const content = fs.readFileSync(pretextHookPath, "utf-8");
 
       const guards = content.match(
         /if \(!isLayoutValidationEnabled\(\)\) return;/g
       );
-      // One guard for usePretextLayout, one for usePretextRichLayout.
-      expect(guards).toHaveLength(2);
+      // Guard for usePretextLayout.
+      expect(guards).toHaveLength(1);
 
       // Every drift measurement must sit behind a guard, so no validation
       // read can be reintroduced without one.
       const measurements = content.match(
         /const actualHeight = containerRef\.current\.getBoundingClientRect\(\)\.height;/g
       );
-      expect(measurements).toHaveLength(2);
+      expect(measurements).toHaveLength(1);
     });
 
     it("skips the forced-reflow read when NODE_ENV is production", async () => {

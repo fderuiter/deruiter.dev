@@ -8,9 +8,6 @@ import {
   fontConfigCache,
   textPrepareCache,
   textLayoutCache,
-  richItemsCache,
-  richPrepareCache,
-  richLayoutCache,
 } from "@/lib/graphics-engine";
 
 export type FontMode = "default" | "opendyslexic";
@@ -40,9 +37,6 @@ export function useFontPreference(): FontPreferenceReturn {
     fontConfigCache.clear();
     textPrepareCache.clear();
     textLayoutCache.clear();
-    richItemsCache.clear();
-    richPrepareCache.clear();
-    richLayoutCache.clear();
     clearCache();
   }, []);
 

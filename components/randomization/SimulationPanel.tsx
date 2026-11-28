@@ -52,6 +52,8 @@ interface SimulationPanelProps {
   readonly workspaceRevision: number;
   /** Builds the panel's own client; defaults to a dedicated worker client. */
   readonly createClient?: () => RandomizationClient;
+  /** Notifies parent export controls when the active QA report changes. */
+  readonly onReportChange?: (report: SimulationReport | null) => void;
 }
 
 function formatCount(value: number): string {
@@ -98,6 +100,7 @@ export function SimulationPanel({
   plan,
   workspaceRevision,
   createClient,
+  onReportChange,
 }: SimulationPanelProps) {
   const baseId = useId();
   const [client] = useState<RandomizationClient>(
@@ -134,6 +137,10 @@ export function SimulationPanel({
   const stale = report !== null && !isSimulationReportCurrent(report, request);
   const running = state.status === "running";
   const reportRepetitions = report?.identity.repetitions ?? repetitions;
+
+  useEffect(() => {
+    onReportChange?.(report);
+  }, [onReportChange, report]);
 
   const run = () => {
     const frozen = JSON.parse(JSON.stringify(request)) as SimulationRequest;

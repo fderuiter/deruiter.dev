@@ -17,6 +17,21 @@ export const STUDY_ARM_TYPES: readonly StudyDesignTerm[] = [
   { code: "C174270", decode: "No Intervention Arm" },
 ];
 
+/** Trial phases: CDISC Trial Phase terms verified in the local CT subset. */
+export const STUDY_PHASE_TERMS: readonly StudyDesignTerm[] = [
+  { code: "C15600", decode: "Phase I Trial" },
+  { code: "C15693", decode: "Phase I/II Trial" },
+  { code: "C15601", decode: "Phase II Trial" },
+  { code: "C15602", decode: "Phase III Trial" },
+  { code: "C15603", decode: "Phase IV Trial" },
+];
+
+/** Organization type used when seeding a sponsor scope for a new protocol identifier. */
+export const CLINICAL_STUDY_SPONSOR_TERM: StudyDesignTerm = {
+  code: "C70793",
+  decode: "Clinical Study Sponsor",
+};
+
 /**
  * Epoch types: the terms of the SDTM Epoch codelist (C99079), in the
  * order a study usually runs through them.

@@ -135,7 +135,7 @@ describe("randomization work area", () => {
     expect(inArea().queryByText(/Plan digest/)).toBeNull();
   });
 
-  it("gates a stored plan behind the acknowledgment and reads metadata from the study", async () => {
+  it("gates a stored plan behind the acknowledgment and edits metadata on the study", async () => {
     await opened();
     fireEvent.click(
       inArea().getByRole("button", { name: "Add a plan for this design" })
@@ -145,7 +145,9 @@ describe("randomization work area", () => {
     );
     fireEvent.click(inArea().getByRole("checkbox"));
     fireEvent.click(stageButton("Study metadata"));
-    expect(inArea().queryByLabelText("Protocol ID")).toBeNull();
+    expect(
+      (inArea().getByLabelText("Protocol ID") as HTMLInputElement).value
+    ).toMatch(/\S+/);
     fireEvent.click(stageButton("Arms and method"));
     expect(
       inArea().getByText(/Arms come from the selected design/)

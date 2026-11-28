@@ -227,6 +227,13 @@ function ReportView({ report }: { readonly report: VerificationReport }) {
   );
 }
 
+/** In-memory artifact passed from the governed export bar for one-click verification. */
+export interface ExternalVerificationArtifact {
+  readonly name: string;
+  readonly content: string;
+  readonly token: number;
+}
+
 /**
  * Verifies a randomization artifact file in this browser (#4009). The file
  * is read locally and never uploaded or logged. Verification runs on its
@@ -235,8 +242,10 @@ function ReportView({ report }: { readonly report: VerificationReport }) {
  */
 export function VerificationPanel({
   createClient,
+  externalArtifact,
 }: {
   readonly createClient?: () => RandomizationClient;
+  readonly externalArtifact?: ExternalVerificationArtifact | null;
 }) {
   const { announce } = useAnnouncer();
   const inputId = useId();
@@ -248,6 +257,7 @@ export function VerificationPanel({
   const [result, setResult] = useState<Result | null>(null);
   const [dragging, setDragging] = useState(false);
   const latest = useRef(0);
+  const handledExternalToken = useRef<number | null>(null);
 
   useEffect(() => () => client.dispose(), [client]);
 
@@ -259,12 +269,15 @@ export function VerificationPanel({
     announce(message);
   };
 
-  const choose = (file: File | undefined) => {
-    if (!file) return;
+  const runVerificationText = (
+    rawName: string,
+    byteLength: number,
+    readText: () => Promise<string>
+  ) => {
     const token = ++latest.current;
-    const name = sanitizeDisplayLabel(file.name) || "file";
+    const name = sanitizeDisplayLabel(rawName) || "file";
     setSelection({ token, name });
-    if (file.size > MAX_BYTES) {
+    if (byteLength > MAX_BYTES) {
       finish(
         token,
         { token, failure: "FILE_TOO_LARGE" },
@@ -273,9 +286,18 @@ export function VerificationPanel({
       return;
     }
     announce("Verifying the file.");
-    void file.text().then(
+    void readText().then(
       (text) => {
         if (latest.current !== token) return;
+        const encodedBytes = new TextEncoder().encode(text).byteLength;
+        if (encodedBytes > MAX_BYTES) {
+          finish(
+            token,
+            { token, failure: "FILE_TOO_LARGE" },
+            "The file is larger than the 8 MiB limit."
+          );
+          return;
+        }
         void client.verify(text).then((outcome) => {
           if (outcome.status === "complete") {
             finish(
@@ -299,6 +321,24 @@ export function VerificationPanel({
           "The file couldn't be read."
         )
     );
+  };
+
+  useEffect(() => {
+    if (!externalArtifact) return;
+    if (handledExternalToken.current === externalArtifact.token) return;
+    handledExternalToken.current = externalArtifact.token;
+    const byteLength = new TextEncoder().encode(
+      externalArtifact.content
+    ).byteLength;
+    runVerificationText(externalArtifact.name, byteLength, () =>
+      Promise.resolve(externalArtifact.content)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalArtifact]);
+
+  const choose = (file: File | undefined) => {
+    if (!file) return;
+    runVerificationText(file.name, file.size, () => file.text());
   };
 
   const shown =

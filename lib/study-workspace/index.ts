@@ -50,12 +50,16 @@ export {
   moveStudyArm,
   moveStudyElement,
   moveStudyEpoch,
+  projectStudyMetadata,
   removeStudyArm,
   removeStudyElement,
   removeStudyEpoch,
   renameStudyArm,
   renameStudyElement,
   renameStudyEpoch,
+  updateStudyName,
+  updateStudyPhase,
+  updateStudyProtocolId,
 } from "./internal/design-ops";
 export {
   DATA_GENERATED_WITHIN_STUDY,
@@ -68,6 +72,7 @@ export {
   STUDY_INTERVENTION_ROLES,
   STUDY_INTERVENTION_TYPES,
   STUDY_OBJECTIVE_LEVELS,
+  STUDY_PHASE_TERMS,
 } from "./internal/design-terms";
 export {
   addStudyActivity,

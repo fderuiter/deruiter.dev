@@ -1,6 +1,7 @@
 /**
- * CDISC ODM-XML v1.3.2 Deserializer and Parser (ODM v2.0 namespaces are not handled)
- * Converts CDISC ODM XML DOM nodes into CRF Studio StudyProtocol.
+ * CDISC ODM-XML Deserializer and Parser (ODM v2.0 namespaces are not handled)
+ * Converts CDISC ODM XML syntax into CRF Studio StudyProtocol via a pure
+ * zero-DOM XML tree scanner (`./xml-tree`).
  */
 
 import {
@@ -17,6 +18,11 @@ import {
   EdcSimulationState,
   ElectronicSignature,
 } from "../types";
+import {
+  parseXmlDocument,
+  type XmlDocumentNode,
+  type XmlElementNode,
+} from "./xml-tree";
 
 /**
  * Maps CDISC ODM DataType to CRF Studio ClinicalDataType
@@ -49,30 +55,34 @@ export function mapOdmDataTypeToClinical(odmType: string): ClinicalDataType {
 
 /** Helper to query elements by local name regardless of XML namespace prefix */
 function getElementsByLocalName(
-  parent: Element | Document,
+  parent: XmlElementNode | XmlDocumentNode,
   localName: string
-): Element[] {
-  const all = parent.getElementsByTagName("*");
-  const result: Element[] = [];
+): XmlElementNode[] {
+  const result: XmlElementNode[] = [];
   const targetLower = localName.toLowerCase();
-  for (let i = 0; i < all.length; i++) {
-    const el = all.item(i);
-    if (el && el.localName.toLowerCase() === targetLower) {
-      result.push(el);
+  const visitChildren = (children: readonly XmlElementNode[]) => {
+    for (let i = 0; i < children.length; i++) {
+      const el = children[i];
+      if (el.localName.toLowerCase() === targetLower) {
+        result.push(el);
+      }
+      if (el.children.length > 0) {
+        visitChildren(el.children);
+      }
     }
-  }
+  };
+  visitChildren(parent.children);
   return result;
 }
 
-/** Helper to get text content of first child matching local name */
 /**
- * The NCI C-code on a CodeList or CodeListItem: the Define-XML 2.1 Alias
+ * The NCI C-code on a CodeList or CodeListItem: the Define-XML Alias
  * (`Context="nci:ExtCodeID"`), or the `def:NCICode` attribute earlier CRF
  * Studio exports wrote. Only the element's own Alias children count, so a
  * CodeList does not pick up one of its items' codes.
  */
-function nciCodeOf(el: Element): string | undefined {
-  const alias = Array.from(el.children).find(
+function nciCodeOf(el: XmlElementNode): string | undefined {
+  const alias = el.children.find(
     (child) =>
       child.localName === "Alias" &&
       child.getAttribute("Context") === "nci:ExtCodeID"
@@ -85,8 +95,8 @@ function nciCodeOf(el: Element): string | undefined {
   );
 }
 
-function aliasNameOf(el: Element, context: string): string | undefined {
-  const alias = Array.from(el.children).find(
+function aliasNameOf(el: XmlElementNode, context: string): string | undefined {
+  const alias = el.children.find(
     (child) =>
       child.localName === "Alias" && child.getAttribute("Context") === context
   );
@@ -94,11 +104,11 @@ function aliasNameOf(el: Element, context: string): string | undefined {
 }
 
 function getDirectChildrenByLocalName(
-  parent: Element,
+  parent: XmlElementNode,
   localName: string
-): Element[] {
+): XmlElementNode[] {
   const target = localName.toLowerCase();
-  return Array.from(parent.children).filter(
+  return parent.children.filter(
     (child) => child.localName.toLowerCase() === target
   );
 }
@@ -142,28 +152,23 @@ function normalizeSignatureMeaning(
   return "Investigator Approval";
 }
 
-function getChildTextContent(parent: Element, localName: string): string {
+function getChildTextContent(
+  parent: XmlElementNode,
+  localName: string
+): string {
   const children = getElementsByLocalName(parent, localName);
   return children.length > 0 ? (children[0].textContent || "").trim() : "";
 }
 
 /**
- * Parses a CDISC ODM XML string (v1.3.2 / v2.0) into a StudyProtocol.
+ * Parses a CDISC ODM XML string into a StudyProtocol.
  */
 export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
   if (!xmlContent || typeof xmlContent !== "string" || !xmlContent.trim()) {
     throw new Error("Invalid CDISC ODM XML: Empty XML payload");
   }
 
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlContent, "text/xml");
-
-  // Check for XML parsing errors
-  const parseError = xmlDoc.getElementsByTagName("parsererror");
-  if (parseError.length > 0) {
-    const errMsg = parseError[0].textContent || "Malformed XML markup";
-    throw new Error(`Invalid CDISC ODM XML structure: ${errMsg}`);
-  }
+  const xmlDoc = parseXmlDocument(xmlContent);
 
   const odmElements = getElementsByLocalName(xmlDoc, "ODM");
   if (odmElements.length === 0) {
@@ -557,7 +562,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     };
 
     const parseSignatureEl = (
-      sigEl: Element,
+      sigEl: XmlElementNode,
       idx: number,
       fallbackCtx?: { subjectId?: string; visitId?: string; formId?: string }
     ) => {
@@ -623,7 +628,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     };
 
     const parseAuditEl = (
-      recEl: Element,
+      recEl: XmlElementNode,
       idx: number,
       fallbackCtx?: {
         subjectId?: string;

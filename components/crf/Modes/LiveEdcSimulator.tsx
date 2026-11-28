@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/clinical-standards";
 import {
   StudyProtocol,
   CRFField,
@@ -463,7 +464,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       const xml = exportStudyToCdiscOdmXml(studyWithSim);
       const filename = `study-${study.protocolNumber}-clinical-odm.xml`;
       downloadFile(xml, filename, { mimeType: "application/xml" });
-      setExchangeStatus(`Exported ${filename} (ODM 1.3.2 ClinicalData).`);
+      setExchangeStatus(
+        `Exported ${filename} (ODM v${CLINICAL_STANDARDS_PROFILE.ODM} ClinicalData).`
+      );
       return;
     }
 
@@ -533,7 +536,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         if (importedSim.lockedForms) setLockedForms(importedSim.lockedForms);
         if (importedSim.sdvMap) setSdvMap(importedSim.sdvMap);
         setExchangeStatus(
-          `Imported ODM 1.3.2 ClinicalData (${importedSim.availableSubjects?.length ?? 0} subjects, ${importedSim.auditLog?.length ?? 0} audits, ${importedSim.signatures?.length ?? 0} simulated signatures).`
+          `Imported ODM v${CLINICAL_STANDARDS_PROFILE.ODM} ClinicalData (${importedSim.availableSubjects?.length ?? 0} subjects, ${importedSim.auditLog?.length ?? 0} audits, ${importedSim.signatures?.length ?? 0} simulated signatures).`
         );
         announce("ODM ClinicalData imported into simulation.", "polite");
         return;
@@ -2615,12 +2618,12 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                 CDISC Clinical Data Exchange
               </h2>
               <p className="text-xs studio-fg-muted font-sans mt-0.5">
-                Bidirectional ODM 1.3.2 ClinicalData, live statistical rows, and
-                RFC 4180 CSV datasets.
+                Bidirectional ODM v{CLINICAL_STANDARDS_PROFILE.ODM}{" "}
+                ClinicalData, live statistical rows, and RFC 4180 CSV datasets.
               </p>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold studio-accent-cyan border shrink-0">
-              ODM 1.3.2
+              ODM v{CLINICAL_STANDARDS_PROFILE.ODM}
             </span>
           </div>
 
@@ -2643,7 +2646,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                   : "studio-fg-muted studio-hover-fg-primary"
               }`}
             >
-              ODM 1.3.2 XML
+              CDISC ODM-XML
             </button>
             <button
               type="button"
@@ -2718,7 +2721,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
             </div>
             <p className="text-[10px] studio-fg-muted font-sans leading-relaxed">
               Simulated signature tokens (not a validated system) serialize into
-              plain ODM 1.3.2{" "}
+              plain ODM v{CLINICAL_STANDARDS_PROFILE.ODM}{" "}
               <code className="font-mono studio-fg-secondary">
                 &lt;Signatures&gt;
               </code>{" "}
@@ -2734,7 +2737,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
           {exchangeFormat === "odm" && (
             <div className="p-3 rounded-xl studio-surface-card border studio-border-default text-xs studio-fg-muted font-sans space-y-1">
               <div className="font-mono font-bold studio-fg-primary text-[11px]">
-                ODM 1.3.2 AdminData + ClinicalData
+                ODM v{CLINICAL_STANDARDS_PROFILE.ODM} AdminData + ClinicalData
               </div>
               <p className="leading-relaxed">
                 Emits study metadata plus captured subject items, audit trail
@@ -2845,7 +2848,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
             <IconDownload className="w-4 h-4 shrink-0" />
             <span>
               {exchangeFormat === "odm"
-                ? "Export ODM 1.3.2 + ClinicalData"
+                ? `Export ODM v${CLINICAL_STANDARDS_PROFILE.ODM} + ClinicalData`
                 : exchangeFormat === "stat"
                   ? statScriptLang === "sas"
                     ? "Export Live SAS Script"

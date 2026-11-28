@@ -131,5 +131,76 @@ describe("CRF Studio - CDISC ODM-XML Parser & Deserializer", () => {
     expect(() => importStudyFromCdiscOdmXml("<root><child/></root>")).toThrow(
       "Missing root <ODM> element"
     );
+    expect(() => importStudyFromCdiscOdmXml("<ODM/>")).toThrow(
+      "Missing <Study> definition"
+    );
+  });
+
+  it("handles UTF-8 BOM, comments, DOCTYPE headers, character references, and prototype-named attributes", () => {
+    const richXml = `\uFEFF<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="odm.xsl"?>
+<!-- Preceding comment -->
+<!DOCTYPE ODM SYSTEM "odm1-3-2.dtd" [<!-- internal subset without entities -->]>
+<ODM xmlns='http://www.cdisc.org/ns/odm/v1.3' ODMVersion='1.3.2' constructor='safe' __proto__='safe'>
+  <Study OID='STUDY.CHARREF'>
+    <GlobalVariables>
+      <StudyName>Study &#65;&#x42; &amp;lt;literal&amp;gt; &apos;ok&apos;</StudyName>
+      <StudyDescription>Desc</StudyDescription>
+      <ProtocolName>PROTO-CHAR</ProtocolName>
+    </GlobalVariables>
+    <MetaDataVersion OID='MDV.1' Name='v1'/>
+  </Study>
+</ODM>`;
+
+    const parsed = importStudyFromCdiscOdmXml(richXml);
+    expect(parsed.protocolNumber).toBe("PROTO-CHAR");
+    expect(parsed.studyName).toBe("Study AB &lt;literal&gt; 'ok'");
+  });
+
+  it("rejects ENTITY declarations and malformed XML constructs cleanly", () => {
+    const cases: Array<[string, RegExp]> = [
+      [
+        `<!DOCTYPE ODM [<!ENTITY xxe "secret">]><ODM><Study OID="S1"/></ODM>`,
+        /ENTITY declarations are not permitted/,
+      ],
+      [`<!DOCTYPE><ODM/>`, /Malformed DOCTYPE/],
+      [`<!DOCTYPE ODM ]><ODM/>`, /Unmatched ']' in DOCTYPE/],
+      [`<!DOCTYPE ODM [><ODM/>`, /Unterminated DOCTYPE/],
+      [`<!ELEMENT ODM ANY><ODM/>`, /Unsupported or misplaced XML declaration/],
+      [`<?xml version="1.0"<ODM/>`, /Unterminated processing instruction/],
+      [`<!-- unterminated <ODM/>`, /Unterminated XML comment/],
+      [`<![CDATA[outside]]><ODM/>`, /CDATA section outside root/],
+      [`<ODM><![CDATA[unterminated</ODM>`, /Unterminated CDATA/],
+      [`<ODM>bad ]]> text</ODM>`, /Unexpected ']]>' in character data/],
+      [`stray<ODM/>`, /Unexpected text outside root/],
+      [`<ODM/>trailing`, /Unexpected text outside root/],
+      [`<ODM/><ODM/>`, /Multiple root elements/],
+      [`</ODM>`, /Unexpected closing tag/],
+      [`<ODM><Study></ODM>`, /Expected closing tag <\/Study>, found <\/ODM>/],
+      [`<ODM></ODM attr>`, /Malformed closing tag/],
+      [`<:ODM/>`, /Malformed qualified name/],
+      [`<a:b:c/>`, /Malformed qualified name/],
+      [`<123/>`, /Expected valid XML tag or attribute name/],
+      [`<ODM a="1"b="2"/>`, /Missing whitespace before attribute/],
+      [`<ODM a="1" a="2"/>`, /Duplicate attribute "a"/],
+      [`<ODM a/>`, /Expected '=' after attribute/],
+      [`<ODM a=1/>`, /must have a quoted value/],
+      [`<ODM a="unterminated/>`, /Unterminated attribute/],
+      [`<ODM a="bad<val"/>`, /Unescaped '<' in attribute/],
+      [`<ODM `, /Unterminated opening tag/],
+      [`<ODM>&unterminated</ODM>`, /Unterminated entity reference/],
+      [`<ODM>&bogus;</ODM>`, /Unknown XML entity "&bogus;"/],
+      [`<ODM>&#xZZ;</ODM>`, /Invalid hex character reference/],
+      [`<ODM>&#abc;</ODM>`, /Invalid decimal character reference/],
+      [`<ODM>&#xD800;</ODM>`, /Out-of-range character reference/],
+      [`<ODM>&#0;</ODM>`, /Out-of-range character reference/],
+      [`<!-- only comment -->`, /Empty XML document/],
+    ];
+
+    for (const [payload, pattern] of cases) {
+      expect(() => importStudyFromCdiscOdmXml(payload), payload).toThrow(
+        pattern
+      );
+    }
   });
 });

@@ -23,7 +23,20 @@ export interface XmlDocumentNode {
   readonly root: XmlElementNode;
 }
 
-const MAX_XML_DEPTH = 64;
+/**
+ * Maximum element nesting depth accepted by `parseXmlDocument`.
+ */
+export const MAX_XML_DEPTH = 64;
+
+/**
+ * Typed syntax and well-formedness error raised by `parseXmlDocument` and `decodeXmlEntities`.
+ */
+export class XmlParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "XmlParseError";
+  }
+}
 
 /**
  * Decodes XML 1.0 predefined and numeric character references in a single pass,
@@ -33,7 +46,7 @@ export function decodeXmlEntities(raw: string): string {
   if (!raw.includes("&")) return raw;
 
   return raw.replace(
-    /&(?:#(\d+)|#x([0-9a-fA-F]+)|(lt|gt|amp|quot|apos));/g,
+    /&(?:#(\d+);|#x([0-9a-fA-F]+);|(lt|gt|amp|quot|apos);|([^;\s]*;?))/g,
     (full, decDigits, hexDigits, named) => {
       if (named) {
         switch (named) {
@@ -51,6 +64,11 @@ export function decodeXmlEntities(raw: string): string {
             return full;
         }
       }
+      if (!decDigits && !hexDigits) {
+        throw new XmlParseError(
+          `Invalid or undeclared XML entity reference "${full}"`
+        );
+      }
       const codePoint = decDigits
         ? parseInt(decDigits, 10)
         : parseInt(hexDigits, 16);
@@ -60,7 +78,9 @@ export function decodeXmlEntities(raw: string): string {
         codePoint > 0x10ffff ||
         (codePoint >= 0xd800 && codePoint <= 0xdfff)
       ) {
-        throw new Error(`Invalid XML numeric character reference "${full}"`);
+        throw new XmlParseError(
+          `Invalid XML numeric character reference "${full}"`
+        );
       }
       return String.fromCodePoint(codePoint);
     }
@@ -95,7 +115,7 @@ function isNameChar(ch: string): boolean {
  */
 export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
   if (!xmlInput || typeof xmlInput !== "string") {
-    throw new Error("Empty XML document");
+    throw new XmlParseError("Empty XML document");
   }
   const src = xmlInput.charCodeAt(0) === 0xfeff ? xmlInput.slice(1) : xmlInput;
   const len = src.length;
@@ -116,14 +136,18 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
 
   const readName = (): string => {
     if (pos >= len || !isNameStartChar(src[pos])) {
-      throw new Error(`Expected XML name at offset ${pos}`);
+      throw new XmlParseError(`Expected XML name at offset ${pos}`);
     }
     const start = pos;
     pos++;
     while (pos < len && isNameChar(src[pos])) pos++;
     const name = src.slice(start, pos);
-    if (name.startsWith(":") || name.endsWith(":") || name.includes("::")) {
-      throw new Error(`Invalid XML qualified name "${name}"`);
+    if (
+      name.startsWith(":") ||
+      name.endsWith(":") ||
+      name.indexOf(":") !== name.lastIndexOf(":")
+    ) {
+      throw new XmlParseError(`Invalid XML qualified name "${name}"`);
     }
     return name;
   };
@@ -133,12 +157,12 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
     if (ltIdx === -1) {
       const trailing = src.slice(pos);
       if (stack.length > 0) {
-        throw new Error(
+        throw new XmlParseError(
           `Unclosed XML element <${stack[stack.length - 1].tagName}>`
         );
       }
       if (trailing.trim().length > 0) {
-        throw new Error("Unexpected text outside root XML element");
+        throw new XmlParseError("Unexpected text outside root XML element");
       }
       break;
     }
@@ -146,11 +170,11 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
     if (ltIdx > pos) {
       const rawText = src.slice(pos, ltIdx);
       if (rawText.includes("]]>")) {
-        throw new Error('Unexpected "]]>" in XML character data');
+        throw new XmlParseError('Unexpected "]]>" in XML character data');
       }
       if (stack.length === 0) {
         if (rawText.trim().length > 0) {
-          throw new Error("Unexpected text before root XML element");
+          throw new XmlParseError("Unexpected text before root XML element");
         }
       } else {
         const decoded = decodeXmlEntities(rawText);
@@ -166,11 +190,11 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
     if (src.startsWith("<!--", pos)) {
       const endComment = src.indexOf("-->", pos + 4);
       if (endComment === -1) {
-        throw new Error("Unterminated XML comment");
+        throw new XmlParseError("Unterminated XML comment");
       }
       const commentBody = src.slice(pos + 4, endComment);
       if (commentBody.includes("--")) {
-        throw new Error('Invalid "--" inside XML comment');
+        throw new XmlParseError('Invalid "--" inside XML comment');
       }
       pos = endComment + 3;
       continue;
@@ -178,11 +202,13 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
 
     if (src.startsWith("<![CDATA[", pos)) {
       if (stack.length === 0) {
-        throw new Error("CDATA section is not allowed outside root element");
+        throw new XmlParseError(
+          "CDATA section is not allowed outside root element"
+        );
       }
       const endCdata = src.indexOf("]]>", pos + 9);
       if (endCdata === -1) {
-        throw new Error("Unterminated CDATA section");
+        throw new XmlParseError("Unterminated CDATA section");
       }
       const cdataText = src.slice(pos + 9, endCdata);
       stack[stack.length - 1].children.push({
@@ -196,7 +222,7 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
     if (src.startsWith("<?", pos)) {
       const endPi = src.indexOf("?>", pos + 2);
       if (endPi === -1) {
-        throw new Error("Unterminated XML processing instruction");
+        throw new XmlParseError("Unterminated XML processing instruction");
       }
       pos = endPi + 2;
       continue;
@@ -204,7 +230,7 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
 
     if (src.startsWith("<!DOCTYPE", pos)) {
       if (stack.length > 0 || rootElement !== null) {
-        throw new Error("Misplaced <!DOCTYPE> declaration");
+        throw new XmlParseError("Misplaced <!DOCTYPE> declaration");
       }
       let depth = 0;
       let inQuote: string | null = null;
@@ -218,6 +244,9 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
         } else if (ch === "[") {
           depth++;
         } else if (ch === "]") {
+          if (depth === 0) {
+            throw new XmlParseError('Unexpected "]" in <!DOCTYPE> declaration');
+          }
           depth--;
         } else if (ch === ">" && depth === 0) {
           break;
@@ -225,11 +254,11 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
         cursor++;
       }
       if (cursor >= len) {
-        throw new Error("Unterminated <!DOCTYPE> declaration");
+        throw new XmlParseError("Unterminated <!DOCTYPE> declaration");
       }
       const doctypeSlice = src.slice(pos, cursor + 1);
       if (/<!ENTITY\b/i.test(doctypeSlice)) {
-        throw new Error(
+        throw new XmlParseError(
           "XML DTD <!ENTITY> declarations are forbidden for security"
         );
       }
@@ -242,15 +271,15 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
       const closeName = readName();
       skipWhitespace();
       if (pos >= len || src[pos] !== ">") {
-        throw new Error(`Expected ">" in closing tag </${closeName}>`);
+        throw new XmlParseError(`Expected ">" in closing tag </${closeName}>`);
       }
       pos++;
       if (stack.length === 0) {
-        throw new Error(`Unexpected closing tag </${closeName}>`);
+        throw new XmlParseError(`Unexpected closing tag </${closeName}>`);
       }
       const popped = stack.pop()!;
       if (popped.tagName !== closeName) {
-        throw new Error(
+        throw new XmlParseError(
           `Mismatched XML closing tag </${closeName}>; expected </${popped.tagName}>`
         );
       }
@@ -272,7 +301,7 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
 
     // Opening or self-closing element `<Tag ...>`
     if (rootElement !== null && stack.length === 0) {
-      throw new Error("Multiple root elements in XML document");
+      throw new XmlParseError("Multiple root elements in XML document");
     }
     pos++; // consume `<`
     const tagName = readName();
@@ -284,7 +313,7 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
       const beforeWs = pos;
       skipWhitespace();
       if (pos >= len) {
-        throw new Error(`Unterminated opening tag <${tagName}>`);
+        throw new XmlParseError(`Unterminated opening tag <${tagName}>`);
       }
       if (src[pos] === ">") {
         pos++;
@@ -296,7 +325,7 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
         break;
       }
       if (pos === beforeWs) {
-        throw new Error(
+        throw new XmlParseError(
           `Expected whitespace between attributes in <${tagName}>`
         );
       }
@@ -307,23 +336,23 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
         attrName === "constructor" ||
         attrName === "prototype"
       ) {
-        throw new Error(`Disallowed attribute name "${attrName}"`);
+        throw new XmlParseError(`Disallowed attribute name "${attrName}"`);
       }
       if (Object.prototype.hasOwnProperty.call(attributes, attrName)) {
-        throw new Error(
+        throw new XmlParseError(
           `Duplicate XML attribute "${attrName}" on <${tagName}>`
         );
       }
       skipWhitespace();
       if (pos >= len || src[pos] !== "=") {
-        throw new Error(
+        throw new XmlParseError(
           `Expected "=" after attribute "${attrName}" on <${tagName}>`
         );
       }
       pos++;
       skipWhitespace();
       if (pos >= len || (src[pos] !== '"' && src[pos] !== "'")) {
-        throw new Error(
+        throw new XmlParseError(
           `Expected quoted value for attribute "${attrName}" on <${tagName}>`
         );
       }
@@ -332,16 +361,22 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
       const valStart = pos;
       const valEnd = src.indexOf(quoteChar, valStart);
       if (valEnd === -1) {
-        throw new Error(`Unterminated attribute "${attrName}" on <${tagName}>`);
+        throw new XmlParseError(
+          `Unterminated attribute "${attrName}" on <${tagName}>`
+        );
       }
       const rawAttrVal = src.slice(valStart, valEnd);
       if (rawAttrVal.includes("<")) {
-        throw new Error(
+        throw new XmlParseError(
           `Unescaped "<" in attribute "${attrName}" on <${tagName}>`
         );
       }
       attributes[attrName] = decodeXmlEntities(rawAttrVal);
       pos = valEnd + 1;
+    }
+
+    if (stack.length >= MAX_XML_DEPTH) {
+      throw new XmlParseError(`XML nesting exceeds ${MAX_XML_DEPTH} levels`);
     }
 
     if (selfClosing) {
@@ -359,9 +394,6 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
         stack[stack.length - 1].children.push(node);
       }
     } else {
-      if (stack.length + 1 > MAX_XML_DEPTH) {
-        throw new Error(`XML nesting exceeds ${MAX_XML_DEPTH} levels`);
-      }
       stack.push({
         tagName,
         prefix,
@@ -373,12 +405,12 @@ export function parseXmlDocument(xmlInput: string): XmlDocumentNode {
   }
 
   if (stack.length > 0) {
-    throw new Error(
+    throw new XmlParseError(
       `Unclosed XML element <${stack[stack.length - 1].tagName}>`
     );
   }
   if (!rootElement) {
-    throw new Error("Empty XML document: missing root element");
+    throw new XmlParseError("Empty XML document: missing root element");
   }
 
   return { root: rootElement };

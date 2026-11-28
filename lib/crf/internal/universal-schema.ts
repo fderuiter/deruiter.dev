@@ -873,11 +873,22 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
   const validatedPayload = buildValidatedUniversalPayload(study);
   const payload = cleanUndefined(validatedPayload);
 
+  const formatYamlKey = (key: string): string => {
+    const isSafeBareKey =
+      /^[A-Za-z0-9_$][A-Za-z0-9_$.-]*$/.test(key) &&
+      !/^(true|false|null|yes|no|on|off)$/i.test(key) &&
+      Number.isNaN(Number(key));
+    return isSafeBareKey ? key : JSON.stringify(key);
+  };
+
   const toYaml = (obj: unknown, indent = 0): string => {
     const pad = "  ".repeat(indent);
     if (obj === null || obj === undefined) return "null";
     if (typeof obj === "string") {
       const needsQuoting =
+        obj.length === 0 ||
+        obj.trim() !== obj ||
+        /[\x00-\x1f\x7f\u0085\u2028\u2029\ufeff\\`~]/.test(obj) ||
         obj.includes("\n") ||
         obj.includes(":") ||
         obj.includes("#") ||
@@ -895,7 +906,8 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
         obj.includes('"') ||
         obj.includes("%") ||
         obj.includes("@") ||
-        obj.trim() === "" ||
+        obj === "---" ||
+        obj === "..." ||
         /^[-?:=]\s/.test(obj) ||
         /^[-?:=]$/.test(obj) ||
         /^(true|false|null|yes|no|on|off)$/i.test(obj) ||
@@ -919,19 +931,22 @@ export function exportUniversalCrfYaml(study: StudyProtocol): string {
         .join("\n");
     }
     if (typeof obj === "object") {
-      const keys = Object.keys(obj as Record<string, unknown>);
+      const keys = Object.keys(obj as Record<string, unknown>).filter(
+        (k) => k !== "__proto__" && k !== "constructor" && k !== "prototype"
+      );
       if (keys.length === 0) return "{}";
       return keys
         .map((k) => {
+          const formattedKey = formatYamlKey(k);
           const val = (obj as Record<string, unknown>)[k];
           if (
             typeof val === "object" &&
             val !== null &&
             (Array.isArray(val) ? val.length > 0 : Object.keys(val).length > 0)
           ) {
-            return `${pad}${k}:\n${toYaml(val, indent + 1)}`;
+            return `${pad}${formattedKey}:\n${toYaml(val, indent + 1)}`;
           }
-          return `${pad}${k}: ${toYaml(val, indent)}`;
+          return `${pad}${formattedKey}: ${toYaml(val, indent)}`;
         })
         .join("\n");
     }

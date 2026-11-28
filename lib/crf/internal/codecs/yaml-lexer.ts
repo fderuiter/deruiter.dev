@@ -36,7 +36,20 @@ export interface YamlLineToken {
   readonly line: number;
 }
 
-const MAX_YAML_NESTING_DEPTH = 64;
+/**
+ * Maximum nesting depth accepted by `parseYamlAst`.
+ */
+export const MAX_YAML_NESTING_DEPTH = 64;
+
+/**
+ * Typed syntax and nesting error raised by `tokenizeYamlLines`, `parseYamlAst`, and `parseYaml`.
+ */
+export class YamlParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "YamlParseError";
+  }
+}
 
 function stripCommentOutsideQuotes(rawLine: string): string {
   let inSingle = false;
@@ -75,7 +88,7 @@ function stripCommentOutsideQuotes(rawLine: string): string {
   }
 
   if (inDouble || inSingle) {
-    throw new Error("Unterminated quoted string in YAML line");
+    throw new YamlParseError("Unterminated quoted string in YAML line");
   }
   return rawLine.trimEnd();
 }
@@ -132,6 +145,9 @@ function foldBlockLines(lines: string[]): string {
  * Lexes a YAML document into indentation-aware logical line tokens.
  */
 export function tokenizeYamlLines(source: string): YamlLineToken[] {
+  if (typeof source !== "string") {
+    throw new YamlParseError("YAML syntax error: input must be a string");
+  }
   const cleanSource =
     source.charCodeAt(0) === 0xfeff ? source.slice(1) : source;
   const rawLines = cleanSource.replace(/\r\n?/g, "\n").split("\n");
@@ -146,7 +162,7 @@ export function tokenizeYamlLines(source: string): YamlLineToken[] {
       indent++;
     }
     if (raw[indent] === "\t") {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error at line ${lineNum}: tabs are not permitted for indentation`
       );
     }
@@ -159,7 +175,7 @@ export function tokenizeYamlLines(source: string): YamlLineToken[] {
     try {
       withoutComment = stripCommentOutsideQuotes(rest);
     } catch (err) {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error at line ${lineNum}: ${(err as Error).message}`
       );
     }
@@ -201,14 +217,14 @@ export function tokenizeYamlLines(source: string): YamlLineToken[] {
             );
           } else {
             if (item.spaces < blockIndent) {
-              throw new Error(
+              throw new YamlParseError(
                 `YAML syntax error at line ${item.line}: inconsistent block scalar indentation`
               );
             }
             if (
               item.raw[spacesIndexBeforeContent(item.raw, blockIndent)] === "\t"
             ) {
-              throw new Error(
+              throw new YamlParseError(
                 `YAML syntax error at line ${item.line}: tabs are not permitted for block indentation`
               );
             }
@@ -313,31 +329,71 @@ function findMappingColon(text: string): number {
   return -1;
 }
 
+function decodeSingleQuotedYaml(
+  trimmed: string,
+  line: number,
+  label: string
+): string {
+  if (
+    !trimmed.startsWith("'") ||
+    !trimmed.endsWith("'") ||
+    trimmed.length < 2
+  ) {
+    throw new YamlParseError(
+      `YAML syntax error at line ${line}: invalid single-quoted ${label}`
+    );
+  }
+  let out = "";
+  for (let i = 1; i < trimmed.length - 1; i++) {
+    const ch = trimmed[i];
+    if (ch === "'") {
+      if (trimmed[i + 1] === "'" && i + 1 < trimmed.length - 1) {
+        out += "'";
+        i++;
+      } else {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: unescaped single quote in ${label}`
+        );
+      }
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function parseYamlKey(rawKey: string, line: number): string {
   const trimmed = rawKey.trim();
   if (!trimmed) {
-    throw new Error(`YAML syntax error at line ${line}: empty mapping key`);
+    throw new YamlParseError(
+      `YAML syntax error at line ${line}: empty mapping key`
+    );
   }
   if (trimmed.startsWith('"')) {
     if (!trimmed.endsWith('"') || trimmed.length < 2) {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error at line ${line}: invalid double-quoted key`
       );
     }
-    return JSON.parse(trimmed) as string;
-  }
-  if (trimmed.startsWith("'")) {
-    if (!trimmed.endsWith("'") || trimmed.length < 2) {
-      throw new Error(
-        `YAML syntax error at line ${line}: invalid single-quoted key`
+    try {
+      const parsedKey = JSON.parse(trimmed) as unknown;
+      if (typeof parsedKey !== "string") {
+        throw new Error("Expected string key");
+      }
+      return parsedKey;
+    } catch (err) {
+      throw new YamlParseError(
+        `YAML syntax error at line ${line}: invalid double-quoted key (${(err as Error).message})`
       );
     }
-    return trimmed.slice(1, -1).replace(/''/g, "'");
+  }
+  if (trimmed.startsWith("'")) {
+    return decodeSingleQuotedYaml(trimmed, line, "key");
   }
   return trimmed;
 }
 
-function splitFlowItems(inner: string, line: number): string[] {
+function splitFlowItems(inner: string, line: number, depth: number): string[] {
   const trimmed = inner.trim();
   if (!trimmed) return [];
 
@@ -371,18 +427,42 @@ function splitFlowItems(inner: string, line: number): string[] {
     }
     if (ch === '"') inDouble = true;
     else if (ch === "'") inSingle = true;
-    else if (ch === "[") bracketDepth++;
-    else if (ch === "]") bracketDepth--;
-    else if (ch === "{") braceDepth++;
-    else if (ch === "}") braceDepth--;
-    else if (ch === "," && bracketDepth === 0 && braceDepth === 0) {
+    else if (ch === "[") {
+      bracketDepth++;
+      if (depth + bracketDepth + braceDepth > MAX_YAML_NESTING_DEPTH) {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
+        );
+      }
+    } else if (ch === "]") {
+      bracketDepth--;
+      if (bracketDepth < 0) {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: unbalanced flow collection delimiters`
+        );
+      }
+    } else if (ch === "{") {
+      braceDepth++;
+      if (depth + bracketDepth + braceDepth > MAX_YAML_NESTING_DEPTH) {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
+        );
+      }
+    } else if (ch === "}") {
+      braceDepth--;
+      if (braceDepth < 0) {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: unbalanced flow collection delimiters`
+        );
+      }
+    } else if (ch === "," && bracketDepth === 0 && braceDepth === 0) {
       parts.push(trimmed.slice(start, i).trim());
       start = i + 1;
     }
   }
 
   if (bracketDepth !== 0 || braceDepth !== 0 || inSingle || inDouble) {
-    throw new Error(
+    throw new YamlParseError(
       `YAML syntax error at line ${line}: unbalanced flow collection delimiters`
     );
   }
@@ -398,7 +478,7 @@ function parseInlineValue(
   depth: number
 ): YamlAstNode {
   if (depth > MAX_YAML_NESTING_DEPTH) {
-    throw new Error(
+    throw new YamlParseError(
       `YAML syntax error at line ${line}: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
     );
   }
@@ -411,31 +491,33 @@ function parseInlineValue(
   }
   if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
     const inner = trimmed.slice(1, -1);
-    const items = splitFlowItems(inner, line).map((item) =>
+    const items = splitFlowItems(inner, line, depth).map((item) =>
       parseInlineValue(item, line, depth + 1)
     );
     return { kind: "sequence", items, line };
   }
   if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
     const inner = trimmed.slice(1, -1);
-    const entries: YamlAstMappingEntry[] = splitFlowItems(inner, line).map(
-      (part) => {
-        const colonIdx = findMappingColon(part);
-        if (colonIdx === -1) {
-          throw new Error(
-            `YAML syntax error at line ${line}: invalid flow mapping entry "${part}"`
-          );
-        }
-        const key = parseYamlKey(part.slice(0, colonIdx), line);
-        const val = parseInlineValue(part.slice(colonIdx + 1), line, depth + 1);
-        return { key, value: val, line };
+    const entries: YamlAstMappingEntry[] = splitFlowItems(
+      inner,
+      line,
+      depth
+    ).map((part) => {
+      const colonIdx = findMappingColon(part);
+      if (colonIdx === -1) {
+        throw new YamlParseError(
+          `YAML syntax error at line ${line}: invalid flow mapping entry "${part}"`
+        );
       }
-    );
+      const key = parseYamlKey(part.slice(0, colonIdx), line);
+      const val = parseInlineValue(part.slice(colonIdx + 1), line, depth + 1);
+      return { key, value: val, line };
+    });
     return { kind: "mapping", entries, line };
   }
   if (trimmed.startsWith('"')) {
     if (!trimmed.endsWith('"') || trimmed.length < 2) {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error at line ${line}: unterminated double-quoted scalar`
       );
     }
@@ -446,20 +528,15 @@ function parseInlineValue(
       }
       return { kind: "scalar", value: parsedStr, line };
     } catch (err) {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error at line ${line}: invalid double-quoted string (${(err as Error).message})`
       );
     }
   }
   if (trimmed.startsWith("'")) {
-    if (!trimmed.endsWith("'") || trimmed.length < 2) {
-      throw new Error(
-        `YAML syntax error at line ${line}: unterminated single-quoted scalar`
-      );
-    }
     return {
       kind: "scalar",
-      value: trimmed.slice(1, -1).replace(/''/g, "'"),
+      value: decodeSingleQuotedYaml(trimmed, line, "scalar"),
       line,
     };
   }
@@ -492,20 +569,20 @@ function isSequenceItemContent(content: string): boolean {
 export function parseYamlAst(source: string): YamlAstNode {
   const tokens = tokenizeYamlLines(source);
   if (tokens.length === 0) {
-    throw new Error("YAML syntax error: empty document");
+    throw new YamlParseError("YAML syntax error: empty document");
   }
 
   let cursor = 0;
 
   const parseNode = (expectedIndent: number, depth: number): YamlAstNode => {
     if (depth > MAX_YAML_NESTING_DEPTH) {
-      throw new Error(
+      throw new YamlParseError(
         `YAML syntax error: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
       );
     }
     const current = tokens[cursor];
     if (!current) {
-      throw new Error("YAML syntax error: unexpected end of document");
+      throw new YamlParseError("YAML syntax error: unexpected end of document");
     }
 
     if (isSequenceItemContent(current.content)) {
@@ -524,6 +601,11 @@ export function parseYamlAst(source: string): YamlAstNode {
     seqIndent: number,
     depth: number
   ): YamlAstSequenceNode => {
+    if (depth > MAX_YAML_NESTING_DEPTH) {
+      throw new YamlParseError(
+        `YAML syntax error: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
+      );
+    }
     const startLine = tokens[cursor].line;
     const items: YamlAstNode[] = [];
 
@@ -531,7 +613,7 @@ export function parseYamlAst(source: string): YamlAstNode {
       const tok = tokens[cursor];
       if (tok.indent < seqIndent) break;
       if (tok.indent > seqIndent) {
-        throw new Error(
+        throw new YamlParseError(
           `YAML syntax error at line ${tok.line}: unexpected indentation (${tok.indent} > ${seqIndent})`
         );
       }
@@ -594,13 +676,20 @@ export function parseYamlAst(source: string): YamlAstNode {
 
         if (cursor < tokens.length && tokens[cursor].indent === itemIndent) {
           const restMap = parseMapping(itemIndent, depth + 1);
-          entries.push(...restMap.entries);
+          for (const entry of restMap.entries) {
+            if (entry.key === firstKey) {
+              throw new YamlParseError(
+                `YAML syntax error at line ${entry.line}: duplicate mapping key "${entry.key}"`
+              );
+            }
+            entries.push(entry);
+          }
         } else if (
           cursor < tokens.length &&
           tokens[cursor].indent > seqIndent &&
           tokens[cursor].indent !== itemIndent
         ) {
-          throw new Error(
+          throw new YamlParseError(
             `YAML syntax error at line ${tokens[cursor].line}: inconsistent indentation in sequence mapping`
           );
         }
@@ -619,6 +708,11 @@ export function parseYamlAst(source: string): YamlAstNode {
     mapIndent: number,
     depth: number
   ): YamlAstMappingNode => {
+    if (depth > MAX_YAML_NESTING_DEPTH) {
+      throw new YamlParseError(
+        `YAML syntax error: nesting exceeds ${MAX_YAML_NESTING_DEPTH} levels`
+      );
+    }
     const startLine = tokens[cursor].line;
     const entries: YamlAstMappingEntry[] = [];
     const seenKeys = new Set<string>();
@@ -627,7 +721,7 @@ export function parseYamlAst(source: string): YamlAstNode {
       const tok = tokens[cursor];
       if (tok.indent < mapIndent) break;
       if (tok.indent > mapIndent) {
-        throw new Error(
+        throw new YamlParseError(
           `YAML syntax error at line ${tok.line}: unexpected indentation (${tok.indent} > ${mapIndent})`
         );
       }
@@ -637,14 +731,14 @@ export function parseYamlAst(source: string): YamlAstNode {
 
       const colonIdx = findMappingColon(tok.content);
       if (colonIdx === -1) {
-        throw new Error(
+        throw new YamlParseError(
           `YAML syntax error at line ${tok.line}: expected "key: value" mapping entry`
         );
       }
 
       const key = parseYamlKey(tok.content.slice(0, colonIdx), tok.line);
       if (seenKeys.has(key)) {
-        throw new Error(
+        throw new YamlParseError(
           `YAML syntax error at line ${tok.line}: duplicate mapping key "${key}"`
         );
       }
@@ -656,7 +750,7 @@ export function parseYamlAst(source: string): YamlAstNode {
       let value: YamlAstNode;
       if (rest) {
         if (rest === "|" || rest === ">") {
-          throw new Error(
+          throw new YamlParseError(
             `YAML syntax error at line ${tok.line}: block chomping scalars ("${rest}") are not supported in Universal CRF YAML; use quoted strings`
           );
         }
@@ -682,7 +776,7 @@ export function parseYamlAst(source: string): YamlAstNode {
   const root = parseNode(tokens[0].indent, 0);
   if (cursor < tokens.length) {
     const leftover = tokens[cursor];
-    throw new Error(
+    throw new YamlParseError(
       `YAML syntax error at line ${leftover.line}: unexpected trailing content`
     );
   }

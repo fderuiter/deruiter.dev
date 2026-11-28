@@ -5,9 +5,11 @@
 # production before any check saw them (docs/how-to/release-and-deploy.md#build-memory).
 #
 # The build fails here the way it would on Vercel if it outgrows the limit,
-# and it also fails when its kernel high-water memory (`memory.peak`) or
-# sampled anonymous memory passes BUDGET_PERCENT of the limit, so the warning
-# comes while there is still room to fix it.
+# and it also fails when its peak anonymous memory passes BUDGET_PERCENT of
+# the limit, so the warning comes while there is still room to fix it.
+# Anonymous memory is what the build itself holds; the cgroup's page cache is
+# reclaimed before the kernel kills anything, so memory.peak is reported, not
+# judged.
 #
 # Exports VERCEL=1 with VERCEL_ENV unset so scripts/build.js skips TypeDoc just
 # as Vercel builds do while keeping production migrations and preview/prod
@@ -119,11 +121,13 @@ SAMPLER=""
 
 gib() { awk -v b="$1" 'BEGIN { printf "%.2f", b / 1024 / 1024 / 1024 }'; }
 peak_anon=$(cat "$PEAK_FILE" 2>/dev/null || echo 0)
+peak_anon="${peak_anon:-0}"
 peak_total=$(cat "$CG/memory.peak" 2>/dev/null || echo 0)
+peak_total="${peak_total:-0}"
 oom_kills=$(awk '$1 == "oom_kill" { print $2 }' "$CG/memory.events" 2>/dev/null || echo 0)
 budget=$((LIMIT_BYTES * BUDGET_PERCENT / 100))
 
-report="Vercel-shaped build: peak memory $(gib "$peak_total") GiB of 8 GiB (anon $(gib "$peak_anon") GiB, budget $(gib "$budget") GiB, ${BUDGET_PERCENT}%); OOM kills ${oom_kills:-0}; exit ${status}."
+report="Vercel-shaped build: peak build memory $(gib "$peak_anon") GiB of 8 GiB (budget $(gib "$budget") GiB, ${BUDGET_PERCENT}%); memory.peak $(gib "$peak_total") GiB; OOM kills ${oom_kills:-0}; exit ${status}."
 echo "$report"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   echo "$report" >>"$GITHUB_STEP_SUMMARY"
@@ -136,12 +140,7 @@ fi
 if [ "$status" -ne 0 ]; then
   exit "$status"
 fi
-
-effective_peak="${peak_total:-0}"
-if [ "${peak_anon:-0}" -gt "$effective_peak" ]; then
-  effective_peak="$peak_anon"
-fi
-if [ "$effective_peak" -gt "$budget" ]; then
-  echo "::error::The build peaked at $(gib "$effective_peak") GiB (memory.peak $(gib "$peak_total") GiB, anon $(gib "$peak_anon") GiB), above ${BUDGET_PERCENT}% of Vercel's 8 GB build machine. Cut build memory before this reaches production."
+if [ "$peak_anon" -gt "$budget" ]; then
+  echo "::error::The build peaked at $(gib "$peak_anon") GiB, above ${BUDGET_PERCENT}% of Vercel's 8 GB build machine. Cut build memory before this reaches production."
   exit 1
 fi

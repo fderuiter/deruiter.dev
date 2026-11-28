@@ -115,6 +115,7 @@ describe("production deploy configuration", () => {
     expect(wrapper).toContain("trap 'handle_signal INT' INT");
     expect(wrapper).toContain("trap 'handle_signal TERM' TERM");
     expect(wrapper).toContain('cat "$CG/memory.peak"');
+    expect(wrapper).toContain('if [ "$peak_anon" -gt "$budget" ]');
     expect(wrapper).toContain("exec npm run build");
     expect(wrapper).toMatch(/oom_kill/);
 
@@ -135,7 +136,7 @@ describe("production deploy configuration", () => {
     }
   });
 
-  it("enforces VERCEL=1 without VERCEL_ENV, cpuset.mems ordering, memory.peak budget, and trap cleanup at runtime", async () => {
+  it("enforces VERCEL=1 without VERCEL_ENV, cpuset.mems ordering, peak_anon budget, and trap cleanup at runtime", async () => {
     const tempDir = fs.mkdtempSync(
       path.join(os.tmpdir(), "vercel-shaped-build-test-")
     );
@@ -179,7 +180,7 @@ node -e '
 echo "anon \${MOCK_ANON_BYTES:-1048576}" >"$cg/memory.stat"
 echo "\${MOCK_PEAK_BYTES:-1048576}" >"$cg/memory.peak"
 echo "oom_kill \${MOCK_OOM_KILLS:-0}" >"$cg/memory.events"
-if [ "\${MOCK_SLEEP_SECONDS:-0}" -gt 0 ]; then
+if [ -n "\${MOCK_SLEEP_SECONDS:-}" ]; then
   sleep "\$MOCK_SLEEP_SECONDS"
 fi
 `,
@@ -227,9 +228,10 @@ exec "$@"
         fs.readdirSync(tempDir).filter((name) => name.startsWith("tmp."))
       ).toEqual([]);
 
-      // Gate on kernel memory.peak > 85% of 8 GiB even when anon stays tiny.
+      // Page cache inflating memory.peak > 85% does not fail when peak_anon stays within budget,
+      // while memory.peak is still reported in the summary output.
       const overPeakBytes = String(7 * 1024 * 1024 * 1024);
-      const peakFailRun = spawnSync(
+      const pageCacheRun = spawnSync(
         "bash",
         [path.join(root, "scripts/vercel-shaped-build.sh")],
         {
@@ -242,8 +244,32 @@ exec "$@"
           encoding: "utf8",
         }
       );
-      expect(peakFailRun.status).toBe(1);
-      expect(peakFailRun.stdout + peakFailRun.stderr).toContain("memory.peak");
+      expect(pageCacheRun.status).toBe(0);
+      expect(pageCacheRun.stdout).toContain("memory.peak 7.00 GiB");
+      expect(fs.existsSync(path.join(cgroupRoot, "vercel-shaped-build"))).toBe(
+        false
+      );
+
+      // Gate on sampled peak_anon > 85% of 8 GiB while keeping memory.peak in the report line.
+      const anonFailRun = spawnSync(
+        "bash",
+        [path.join(root, "scripts/vercel-shaped-build.sh")],
+        {
+          cwd: root,
+          env: {
+            ...baseEnv,
+            MOCK_ANON_BYTES: overPeakBytes,
+            MOCK_PEAK_BYTES: overPeakBytes,
+            MOCK_SLEEP_SECONDS: "1.2",
+          },
+          encoding: "utf8",
+        }
+      );
+      expect(anonFailRun.status).toBe(1);
+      expect(anonFailRun.stdout).toContain("memory.peak 7.00 GiB");
+      expect(anonFailRun.stdout + anonFailRun.stderr).toContain(
+        "The build peaked at 7.00 GiB, above 85%"
+      );
       expect(fs.existsSync(path.join(cgroupRoot, "vercel-shaped-build"))).toBe(
         false
       );

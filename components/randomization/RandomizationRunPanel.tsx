@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_DISPLAY_PROFILE,
-  computePlanDigest,
+  RANDOMIZATION_DISCLOSURE_POLICY_VERSION,
   decideRandomizationExport,
-  presentAllocationRows,
   resolvePresentation,
+  serializeRandomizationExport,
   type AllocationRow,
   type DisplayProfile,
   type RandomizationRequest,
+  type SimulationReport,
+  type TextRandomizationExportKind,
 } from "@/lib/randomization";
 import { downloadFile } from "@/lib/download";
 import type { StudyRandomizationEvidenceBinding } from "@/lib/study-workspace";
@@ -21,7 +23,7 @@ import {
   type RandomizationClient,
 } from "./randomization-client";
 import { ResultsPanel } from "./ResultsPanel";
-import { BUTTON } from "./RandomizationStageEditors";
+import { BUTTON, MONO } from "./RandomizationStageEditors";
 
 /** Study metadata written into every export (RND-WORKS-001). */
 interface StudyMetadata {
@@ -36,23 +38,50 @@ type Currency =
   | { readonly status: "provenance-changed" }
   | { readonly status: "stale"; readonly reasons: readonly string[] };
 
+const EXPORT_BUNDLE_FORMATS: readonly {
+  readonly kind: TextRandomizationExportKind;
+  readonly label: string;
+  readonly hint: string;
+}[] = [
+  {
+    kind: "csv",
+    label: "Download CSV",
+    hint: "Masked or full schedule table with study metadata header",
+  },
+  {
+    kind: "allocation-json",
+    label: "Artifact JSON",
+    hint: "Canonical immutable allocation artifact with SHA-256 digest",
+  },
+  {
+    kind: "seed-config",
+    label: "Seed & config",
+    hint: "Deterministic seed, ratios, and request configuration",
+  },
+  {
+    kind: "executable-code",
+    label: "Reproduction script",
+    hint: "Self-contained Node.js (.mjs) digest verification script",
+  },
+  {
+    kind: "validation-manifest",
+    label: "Validation manifest",
+    hint: "Provenance digests, schedule counts, and Monte Carlo QA link",
+  },
+];
+
 /** "R7" to 7, for the client's revision guard. */
 function revisionNumber(id: string): number {
   const n = Number.parseInt(id.replace(/^\D+/, ""), 10);
   return Number.isSafeInteger(n) ? n : 0;
 }
 
-function csvCell(value: string | number | null): string {
-  const text = value === null ? "" : String(value);
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 /**
  * Run, cancel and review one ready randomization request (#4006). Run
  * freezes the request as it is at that moment; any later edit marks the
  * result stale instead of changing it. Results are shown through the
- * disclosure policy (#4005), masked by default, and the CSV export goes
- * through the single export gate with the study metadata in its header.
+ * disclosure policy (#4005), masked by default, and all five text/JSON
+ * exports pass through `decideRandomizationExport` and `serializeRandomizationExport`.
  */
 export function RandomizationRunPanel({
   request,
@@ -63,6 +92,7 @@ export function RandomizationRunPanel({
   bind,
   checkCurrency,
   createClient,
+  onVerifyArtifact,
 }: {
   /** The ready request, or null while the plan is not ready to run. */
   readonly request: RandomizationRequest | null;
@@ -78,8 +108,14 @@ export function RandomizationRunPanel({
     binding: StudyRandomizationEvidenceBinding | null
   ) => Currency;
   readonly createClient?: () => RandomizationClient;
+  /** Sends an exported allocation-json artifact straight to VerificationPanel. */
+  readonly onVerifyArtifact?: (artifact: {
+    readonly name: string;
+    readonly content: string;
+  }) => void;
 }) {
   const { announce } = useAnnouncer();
+  const exportHeadingId = useId();
   const [client] = useState<RandomizationClient>(
     () => createClient?.() ?? createRandomizationClient()
   );
@@ -94,6 +130,14 @@ export function RandomizationRunPanel({
   const [profile, setProfile] = useState<DisplayProfile>(
     DEFAULT_DISPLAY_PROFILE
   );
+  const disclosureScopeKey = request?.id ?? "no-plan";
+  const [acknowledgedScopeKey, setAcknowledgedScopeKey] = useState<
+    string | null
+  >(null);
+  const fullDisclosureAcknowledged =
+    acknowledgedScopeKey === disclosureScopeKey;
+  const [simulationReport, setSimulationReport] =
+    useState<SimulationReport | null>(null);
 
   useEffect(() => () => client.dispose(), [client]);
 
@@ -103,9 +147,11 @@ export function RandomizationRunPanel({
   const currency: Currency | null =
     summary && frozen ? checkCurrency(frozen, binding) : null;
   const presentation = resolvePresentation(profile);
+  const disclosureMode = presentation.maskTreatment ? "masked" : "full";
 
   const run = () => {
     if (!request) return;
+    setAcknowledgedScopeKey(null);
     setBinding(bind());
     // The seed is already on the request, so a rerun is reproducible.
     const snapshot = JSON.parse(
@@ -131,45 +177,73 @@ export function RandomizationRunPanel({
       });
   };
 
-  const exportDecision = decideRandomizationExport({
-    kind: "csv",
-    lifecycle,
-    disclosure: presentation.maskTreatment ? "masked" : "full",
-    fullDisclosureAcknowledged: false,
-    useNoticeAcknowledged: acknowledged,
-  });
+  const decideKind = (kind: TextRandomizationExportKind) =>
+    decideRandomizationExport({
+      kind,
+      lifecycle,
+      disclosure: disclosureMode,
+      fullDisclosureAcknowledged,
+      useNoticeAcknowledged: acknowledged,
+    });
 
-  const downloadCsv = async () => {
-    if (!summary || !frozen || !exportDecision.allowed) return;
+  const csvDecision = decideKind("csv");
+  const artifactJsonDecision = decideKind("allocation-json");
+
+  const collectAllRows = async (): Promise<AllocationRow[]> => {
+    if (!summary) return [];
     const rows: AllocationRow[] = [];
     for (let offset = 0; offset < summary.rowCount; offset += 500) {
       const next = await client.page(offset, 500);
       rows.push(...next.rows);
     }
-    const shown = presentAllocationRows(rows, presentation);
-    const header = [
-      `# Protocol ID: ${metadata.protocolId || "not stated"}`,
-      `# Study name: ${metadata.studyName || "not stated"}`,
-      `# Phase: ${metadata.phase || "not stated"}`,
-      `# Plan: ${frozen.name} (${frozen.id})`,
-      `# Seed: ${frozen.seed.value} (${frozen.seed.source})`,
-      `# Plan digest: ${computePlanDigest(frozen)}`,
-      `# Content digest: ${summary.contentDigest}`,
-      `# Disclosure: ${exportDecision.metadata.label}, policy ${exportDecision.metadata.disclosurePolicyVersion}`,
-    ];
-    const lines = [
-      ...header,
-      "sequence,subject_id,site_id,stratum_key,arm_code",
-      ...shown.map((row) =>
-        [row.sequence, row.subjectId, row.siteId, row.stratumKey, row.armCode]
-          .map(csvCell)
-          .join(",")
-      ),
-    ];
-    downloadFile(lines.join("\n"), `${frozen.id}-schedule.csv`, {
-      mimeType: "text/csv",
-    });
+    return rows;
   };
+
+  const buildExportBundleItem = async (kind: TextRandomizationExportKind) => {
+    if (!summary || !frozen) return null;
+    const decision = decideKind(kind);
+    if (!decision.allowed) return null;
+    const rows = await collectAllRows();
+    const serialized = serializeRandomizationExport({
+      kind,
+      lifecycle,
+      disclosure: disclosureMode,
+      fullDisclosureAcknowledged,
+      useNoticeAcknowledged: acknowledged,
+      request: frozen,
+      reducedRatios: summary.reducedRatios,
+      rows,
+      studyMetadata: metadata,
+      counts: {
+        allocatedCount: summary.rowCount,
+        enrollmentTarget: summary.requestedRows,
+        shortfall: summary.shortfall,
+        partialBlockCount: summary.partialBlockCount ?? 0,
+        exhaustedStrataCount: 0,
+      },
+      simulationReport,
+    });
+    return serialized.ok ? serialized : null;
+  };
+
+  const handleDownloadFormat = async (kind: TextRandomizationExportKind) => {
+    const built = await buildExportBundleItem(kind);
+    if (!built) return;
+    downloadFile(built.content, built.filename, {
+      mimeType: built.mimeType,
+    });
+    announce(`Exported ${built.filename}.`);
+  };
+
+  const handleVerifyGeneratedArtifact = async () => {
+    if (!onVerifyArtifact) return;
+    const built = await buildExportBundleItem("allocation-json");
+    if (!built) return;
+    onVerifyArtifact({ name: built.filename, content: built.content });
+  };
+
+  const canAcknowledgeFullDisclosure =
+    lifecycle === "promoted" && acknowledged && !presentation.maskTreatment;
 
   return (
     <div className="space-y-4 border-t border-white/[0.08] pt-4">
@@ -213,7 +287,13 @@ export function RandomizationRunPanel({
 
       {summary && (
         <div className="space-y-4">
-          <DisclosureControls profile={profile} onChange={setProfile} />
+          <DisclosureControls
+            profile={profile}
+            onChange={(next) => {
+              setProfile(next);
+              setAcknowledgedScopeKey(null);
+            }}
+          />
           {frozen && (
             <ResultsPanel
               key={state.identity?.operationId ?? 0}
@@ -226,29 +306,106 @@ export function RandomizationRunPanel({
             />
           )}
 
-          <div className="space-y-1">
-            <button
-              type="button"
-              className={`${BUTTON} min-w-12`}
-              disabled={!exportDecision.allowed}
-              onClick={() => void downloadCsv()}
-            >
-              Download CSV
-            </button>
-            <p className="text-sm text-slate-400">
-              The full schedule: all {summary.rowCount} rows in generated order.
-              Filters and sorting above don&apos;t apply to it.
-            </p>
-            {!exportDecision.allowed && (
-              <p className="text-sm text-slate-400">
-                {exportDecision.code === "EXPLORATION_EXPORT_BLOCKED"
-                  ? "An exploration cannot be exported. Promote it to a plan for this study first."
-                  : exportDecision.code === "USE_NOTICE_REQUIRED"
-                    ? "Acknowledge the use notice before exporting."
-                    : "Masked export only. Mask the treatment column to download."}
+          <section
+            aria-labelledby={exportHeadingId}
+            data-testid="randomization-export-bundle"
+            className="space-y-3 rounded border border-white/[0.08] bg-[#13151a] p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h5 id={exportHeadingId} className="text-sm font-semibold">
+                  Export and disclosure bundle
+                </h5>
+                <p className="text-xs text-slate-400">
+                  Exports include all {summary.rowCount} rows in generated
+                  order; table filters and sorting above do not alter them.
+                </p>
+              </div>
+              <span
+                className={`${MONO} rounded border border-white/[0.08] bg-[#0d0e11] px-2.5 py-1 text-xs text-slate-300`}
+              >
+                Mode: {disclosureMode} · policy v
+                {RANDOMIZATION_DISCLOSURE_POLICY_VERSION}
+                {simulationReport ? " · QA linked" : ""}
+              </span>
+            </div>
+
+            {lifecycle === "exploration" ? (
+              <p className="text-sm text-amber-200">
+                An exploration cannot be exported. Promote it to a plan for this
+                study first.
               </p>
-            )}
-          </div>
+            ) : !acknowledged ? (
+              <p className="text-sm text-amber-200">
+                Acknowledge the use notice before exporting.
+              </p>
+            ) : presentation.maskTreatment ? (
+              <p className="text-xs text-slate-400">
+                Masked mode allows CSV and validation manifest exports. To
+                unlock full CSV, Artifact JSON, Seed &amp; config, and
+                Reproduction script exports, switch to an unmasked view above
+                (for example, Biostatistician + Show treatment values) and
+                confirm full disclosure below.
+              </p>
+            ) : null}
+
+            <label className="flex min-h-12 items-center gap-2.5 rounded border border-white/[0.08] bg-[#0d0e11] px-3 py-2 text-sm text-slate-200">
+              <input
+                type="checkbox"
+                className="h-5 w-5 accent-amber-400 disabled:opacity-40"
+                checked={
+                  canAcknowledgeFullDisclosure && fullDisclosureAcknowledged
+                }
+                disabled={!canAcknowledgeFullDisclosure}
+                onChange={(event) =>
+                  setAcknowledgedScopeKey(
+                    event.target.checked ? disclosureScopeKey : null
+                  )
+                }
+              />
+              <span>
+                Confirm full-disclosure export: I understand unmasked schedules,
+                seeds, and reproduction scripts reveal or rebuild every
+                treatment assignment.
+              </span>
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              {EXPORT_BUNDLE_FORMATS.map((format) => {
+                const decision = decideKind(format.kind);
+                return (
+                  <button
+                    key={format.kind}
+                    type="button"
+                    title={format.hint}
+                    className={`${BUTTON} min-w-12`}
+                    disabled={!decision.allowed}
+                    onClick={() => void handleDownloadFormat(format.kind)}
+                  >
+                    {format.label}
+                  </button>
+                );
+              })}
+              {onVerifyArtifact && (
+                <button
+                  type="button"
+                  className={`${BUTTON} min-w-12 border-emerald-500/40 text-emerald-200 hover:border-emerald-400`}
+                  disabled={!artifactJsonDecision.allowed}
+                  onClick={() => void handleVerifyGeneratedArtifact()}
+                >
+                  Verify generated artifact
+                </button>
+              )}
+            </div>
+
+            {!csvDecision.allowed &&
+              csvDecision.code === "FULL_DISCLOSURE_NOT_ACKNOWLEDGED" && (
+                <p className="text-xs text-amber-200">
+                  Check the full-disclosure confirmation above to enable all
+                  five export formats and one-click artifact verification.
+                </p>
+              )}
+          </section>
         </div>
       )}
 
@@ -256,6 +413,7 @@ export function RandomizationRunPanel({
         <SimulationPanel
           plan={request}
           workspaceRevision={revisionNumber(revisionId)}
+          onReportChange={setSimulationReport}
         />
       )}
     </div>

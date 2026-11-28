@@ -247,6 +247,16 @@ export interface StudyDesignTerm {
   readonly decode: string;
 }
 
+/** Study-level operational metadata projected from the selected version and design. */
+export interface StudyMetadataView {
+  readonly protocolId: string;
+  readonly studyName: string;
+  /** Coded trial phase when it matches a known CDISC Study Phase term, or null. */
+  readonly phase: StudyDesignTerm | null;
+  /** Human-readable phase decode from the study design, or empty string when absent. */
+  readonly phaseDecode: string;
+}
+
 /** One arm of the design grid, keyed by its USDM id. */
 export interface StudyDesignArm {
   readonly id: string;

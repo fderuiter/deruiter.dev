@@ -2,14 +2,17 @@ import type {
   StudyDesignCellRef,
   StudyDesignTerm,
   StudyEdit,
+  StudyMetadataView,
   StudyPatchOperation,
   StudyWorkspace,
 } from "../types";
 import {
+  CLINICAL_STUDY_SPONSOR_TERM,
   DATA_GENERATED_WITHIN_STUDY,
   DATA_ORIGIN_DESCRIPTION,
   STUDY_ARM_TYPES,
   STUDY_EPOCH_TYPES,
+  STUDY_PHASE_TERMS,
   usdmCode,
 } from "./design-terms";
 import {
@@ -17,6 +20,8 @@ import {
   orderedEpochs,
   recordsOf,
   selectedDesign,
+  termOf,
+  textOf,
   type JsonRecord,
 } from "./design-grid";
 import { applyStudyPatch, createStudyEdit } from "./ops";
@@ -600,4 +605,242 @@ export function removeStudyElement(
   if (index >= 0)
     patch.push({ op: "remove", path: `${pointer}/elements/${index}` });
   return removal(workspace, patch, [elementId], `Remove element "${name}"`);
+}
+
+// Study metadata
+
+/** Projects protocol ID, study name, and coded phase from the selected version and design. */
+export function projectStudyMetadata(
+  workspace: StudyWorkspace
+): StudyMetadataView {
+  const { version, design } = selectedDesign(workspace);
+  const identifiers = recordsOf(version.studyIdentifiers);
+  const protocolId = textOf(identifiers[0]?.text).trim();
+  const studyRecord = (workspace.usdm as unknown as JsonRecord).study;
+  const studyName =
+    typeof studyRecord === "object" && studyRecord !== null
+      ? textOf((studyRecord as JsonRecord).name)
+      : "";
+  const phaseRecord =
+    typeof design.studyPhase === "object" && design.studyPhase !== null
+      ? (design.studyPhase as JsonRecord)
+      : null;
+  const standardTerm = phaseRecord ? termOf(phaseRecord.standardCode) : null;
+  const matchedTerm = standardTerm
+    ? (STUDY_PHASE_TERMS.find((t) => t.code === standardTerm.code) ??
+      standardTerm)
+    : null;
+  return {
+    protocolId,
+    studyName,
+    phase: matchedTerm,
+    phaseDecode: standardTerm?.decode ?? "",
+  };
+}
+
+/**
+ * Updates the primary `StudyIdentifier` text on the selected study version as a
+ * reversible `StudyEdit`. When a blank study has no identifier or sponsor
+ * organization yet, seeds both so the resulting USDM v4 document remains
+ * schema-valid. Passing an empty string removes a sole identifier or clears its
+ * text.
+ */
+export function updateStudyProtocolId(
+  workspace: StudyWorkspace,
+  protocolId: string
+): StudyEdit {
+  const { versionPointer, version } = selectedDesign(workspace);
+  const trimmed = protocolId.trim();
+  const identifiers = recordsOf(version.studyIdentifiers);
+  const nextId = idMaker(workspace);
+
+  if (!trimmed) {
+    if (identifiers.length === 0) {
+      return createStudyEdit(workspace, [], "Clear protocol ID");
+    }
+    const firstId = textOf(identifiers[0]?.id);
+    if (identifiers.length === 1 && firstId) {
+      const candidatePatch: StudyPatchOperation[] = [
+        { op: "remove", path: `${versionPointer}/studyIdentifiers/0` },
+      ];
+      const { usdm } = applyStudyPatch(workspace.usdm, candidatePatch);
+      if (!mentions(usdm, firstId)) {
+        return createStudyEdit(workspace, candidatePatch, "Clear protocol ID");
+      }
+    }
+    return createStudyEdit(
+      workspace,
+      [
+        {
+          op: "replace",
+          path: `${versionPointer}/studyIdentifiers/0/text`,
+          value: "",
+        },
+      ],
+      "Clear protocol ID"
+    );
+  }
+
+  if (identifiers.length > 0) {
+    return createStudyEdit(
+      workspace,
+      [
+        {
+          op: "replace",
+          path: `${versionPointer}/studyIdentifiers/0/text`,
+          value: trimmed,
+        },
+      ],
+      `Set protocol ID to "${trimmed}"`
+    );
+  }
+
+  const patch: StudyPatchOperation[] = [];
+  const organizations = recordsOf(version.organizations);
+  let scopeId = textOf(organizations[0]?.id);
+  if (!scopeId) {
+    scopeId = nextId("Organization");
+    const sponsorOrg = {
+      id: scopeId,
+      name: "Study Sponsor",
+      type: {
+        ...usdmCode(nextId("Code"), CLINICAL_STUDY_SPONSOR_TERM),
+        codeSystemVersion: workspace.locks.ctPackageDate,
+      },
+      identifierScheme: "Sponsor",
+      identifier: trimmed,
+      instanceType: "Organization",
+    };
+    if (Array.isArray(version.organizations)) {
+      patch.push({
+        op: "add",
+        path: `${versionPointer}/organizations/-`,
+        value: sponsorOrg,
+      });
+    } else {
+      patch.push({
+        op: "add",
+        path: `${versionPointer}/organizations`,
+        value: [sponsorOrg],
+      });
+    }
+  }
+
+  const newIdentifier = {
+    id: nextId("StudyIdentifier"),
+    text: trimmed,
+    scopeId,
+    instanceType: "StudyIdentifier",
+  };
+  if (Array.isArray(version.studyIdentifiers)) {
+    patch.push({
+      op: "add",
+      path: `${versionPointer}/studyIdentifiers/0`,
+      value: newIdentifier,
+    });
+  } else {
+    patch.push({
+      op: "add",
+      path: `${versionPointer}/studyIdentifiers`,
+      value: [newIdentifier],
+    });
+  }
+
+  return createStudyEdit(workspace, patch, `Set protocol ID to "${trimmed}"`);
+}
+
+/**
+ * Updates `study.name` on the workspace USDM document as a reversible
+ * `StudyEdit`. Rejects empty names because USDM v4 requires `Study.name` to
+ * contain at least one character.
+ */
+export function updateStudyName(
+  workspace: StudyWorkspace,
+  studyName: string
+): StudyEdit {
+  const clean = cleanName(studyName, "study");
+  return createStudyEdit(
+    workspace,
+    [
+      {
+        op: "replace",
+        path: "/study/name",
+        value: clean,
+      },
+    ],
+    `Rename study to "${clean}"`
+  );
+}
+
+/**
+ * Updates `design.studyPhase` on the selected interventional study design as a
+ * reversible `StudyEdit`. Accepts a coded phase from `STUDY_PHASE_TERMS` (by
+ * code) or `null` to clear the phase.
+ */
+export function updateStudyPhase(
+  workspace: StudyWorkspace,
+  phaseCode: string | null
+): StudyEdit {
+  const { pointer, design } = selectedDesign(workspace);
+  const hasPhaseKey = Object.hasOwn(design, "studyPhase");
+  const trimmed = phaseCode?.trim() ?? "";
+
+  if (!trimmed) {
+    return createStudyEdit(
+      workspace,
+      [
+        {
+          op: hasPhaseKey ? "replace" : "add",
+          path: `${pointer}/studyPhase`,
+          value: null,
+        },
+      ],
+      "Clear study phase"
+    );
+  }
+
+  const term = findTerm(STUDY_PHASE_TERMS, trimmed, "study phase");
+  const nextId = idMaker(workspace);
+  const existingPhase =
+    typeof design.studyPhase === "object" && design.studyPhase !== null
+      ? (design.studyPhase as JsonRecord)
+      : null;
+  const existingStd =
+    existingPhase &&
+    typeof existingPhase.standardCode === "object" &&
+    existingPhase.standardCode !== null
+      ? (existingPhase.standardCode as JsonRecord)
+      : null;
+
+  const aliasId = textOf(existingPhase?.id) || nextId("AliasCode");
+  const stdCodeId = textOf(existingStd?.id) || nextId("Code");
+  const aliases = Array.isArray(existingPhase?.standardCodeAliases)
+    ? structuredClone(existingPhase.standardCodeAliases)
+    : [];
+
+  const aliasValue = {
+    id: aliasId,
+    standardCode: {
+      id: stdCodeId,
+      code: term.code,
+      codeSystem: "http://www.cdisc.org",
+      codeSystemVersion: workspace.locks.ctPackageDate,
+      decode: term.decode,
+      instanceType: "Code",
+    },
+    standardCodeAliases: aliases,
+    instanceType: "AliasCode",
+  };
+
+  return createStudyEdit(
+    workspace,
+    [
+      {
+        op: hasPhaseKey ? "replace" : "add",
+        path: `${pointer}/studyPhase`,
+        value: aliasValue,
+      },
+    ],
+    `Set study phase to "${term.decode}"`
+  );
 }

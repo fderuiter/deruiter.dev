@@ -22,19 +22,29 @@ import {
   type RandomizationPresetId,
 } from "@/lib/randomization/presets";
 import {
+  STUDY_PHASE_TERMS,
   addStudyRandomizationPlan,
   bindStudyRandomizationEvidence,
   checkStudyRandomizationEvidence,
+  projectStudyMetadata,
+  removeStudyRandomizationPlan,
   resolveStudyRandomizationPlan,
+  updateStudyName,
+  updateStudyPhase,
+  updateStudyProtocolId,
   updateStudyRandomizationPlan,
   type StudyEdit,
   type StudyRandomizationPlan,
   type StudyWorkspace,
 } from "@/lib/study-workspace";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
+import { IntentLink } from "@/components/ui/IntentLink";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { RandomizationRunPanel } from "./RandomizationRunPanel";
-import { VerificationPanel } from "./VerificationPanel";
+import {
+  VerificationPanel,
+  type ExternalVerificationArtifact,
+} from "./VerificationPanel";
 import {
   BUTTON,
   CapsStage,
@@ -195,24 +205,11 @@ function studyMetadata(workspace: StudyWorkspace): {
   studyName: string;
   phase: string;
 } {
-  const study = workspace.usdm.study as unknown as Record<string, unknown>;
-  const version = asList<Record<string, unknown>>(study.versions).find(
-    (v) => v.id === workspace.selection.studyVersionId
-  );
-  const design = asList<Record<string, unknown>>(version?.studyDesigns).find(
-    (d) => d.id === workspace.selection.studyDesignId
-  );
-  const identifier = asList<Record<string, unknown>>(
-    version?.studyIdentifiers
-  )[0];
-  const phase = isRecord(design?.studyPhase)
-    ? design.studyPhase.standardCode
-    : undefined;
+  const projected = projectStudyMetadata(workspace);
   return {
-    protocolId: typeof identifier?.text === "string" ? identifier.text : "",
-    studyName: typeof study.name === "string" ? study.name : "",
-    phase:
-      isRecord(phase) && typeof phase.decode === "string" ? phase.decode : "",
+    protocolId: projected.protocolId,
+    studyName: projected.studyName,
+    phase: projected.phase?.decode ?? "",
   };
 }
 
@@ -321,6 +318,8 @@ export function RandomizationWorkspace({
     presetId: RandomizationPresetId;
     fields: readonly PresetReplacedField[];
   } | null>(null);
+  const [externalArtifact, setExternalArtifact] =
+    useState<ExternalVerificationArtifact | null>(null);
 
   // A removed plan, or an undo past its creation, falls back to exploration.
   const plan = plans.find((p) => p.id === chosen) ?? null;
@@ -383,6 +382,7 @@ export function RandomizationWorkspace({
 
   const addPlan = () => {
     const name = `Randomization plan ${plans.length + 1}`;
+    const nextId = `RandomizationPlan_${nextPlanNumber(plans)}`;
     const ok = apply((w) =>
       addStudyRandomizationPlan(w, {
         name,
@@ -395,8 +395,33 @@ export function RandomizationWorkspace({
       })
     );
     if (ok) {
-      setChosen(`RandomizationPlan_${nextPlanNumber(plans)}`);
+      setChosen(nextId);
       setStage("notice");
+      announce(`Added ${name}.`);
+    }
+  };
+
+  const renamePlan = (nextName: string) => {
+    if (!plan) return;
+    const trimmed = nextName.trim();
+    if (!trimmed || trimmed === plan.name) return;
+    const ok = apply((w) =>
+      updateStudyRandomizationPlan(w, plan.id, { name: trimmed })
+    );
+    if (ok) {
+      announce(`Renamed plan to ${trimmed}.`);
+    }
+  };
+
+  const removePlan = () => {
+    if (!plan) return;
+    const removedName = plan.name;
+    const remaining = plans.filter((p) => p.id !== plan.id);
+    const ok = apply((w) => removeStudyRandomizationPlan(w, plan.id));
+    if (ok) {
+      setChosen(remaining[0]?.id ?? EXPLORATION);
+      setStage("notice");
+      announce(`Removed ${removedName}. Undo restores it.`);
     }
   };
 
@@ -452,32 +477,75 @@ export function RandomizationWorkspace({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-          Working on
-          <select
-            className={FIELD}
-            value={plan ? plan.id : EXPLORATION}
-            onChange={(event) => {
-              setChosen(event.target.value);
-              setStage("notice");
-            }}
-          >
-            <option value={EXPLORATION}>Exploration (synthetic)</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className={`${BUTTON} min-w-12`}
-          onClick={addPlan}
-        >
-          Add a plan for this design
-        </button>
+      <div
+        data-testid="randomization-plan-strip"
+        className="space-y-3 rounded border border-white/[0.08] bg-[#13151a] p-3"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-end gap-3">
+            <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+              Working on
+              <select
+                className={FIELD}
+                value={plan ? plan.id : EXPLORATION}
+                onChange={(event) => {
+                  setChosen(event.target.value);
+                  setStage("notice");
+                }}
+              >
+                <option value={EXPLORATION}>Exploration (synthetic)</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className={`${BUTTON} min-w-12`}
+              onClick={addPlan}
+            >
+              Add a plan for this design
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`${MONO} rounded border border-white/[0.08] bg-[#0d0e11] px-2.5 py-1 text-xs text-slate-300`}
+            >
+              {plan
+                ? plan.state === "acknowledged-reference"
+                  ? "Plan · acknowledged"
+                  : "Plan · draft"
+                : "Synthetic exploration"}
+            </span>
+            <IntentLink
+              href="/study-data"
+              className="inline-flex min-h-12 items-center rounded border border-white/[0.08] bg-[#0d0e11] px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
+              Study Data pipeline
+            </IntentLink>
+          </div>
+        </div>
+        {plan && (
+          <div className="flex flex-wrap items-end gap-3 border-t border-white/[0.06] pt-3">
+            <div className="min-w-0 flex-1 basis-56">
+              <CommitField
+                key={`${plan.id}:${plan.name}`}
+                label="Plan name"
+                value={plan.name}
+                onCommit={renamePlan}
+              />
+            </div>
+            <button
+              type="button"
+              className={`${BUTTON} min-w-12 border-rose-500/30 text-rose-200 hover:border-rose-400`}
+              onClick={removePlan}
+            >
+              Remove plan
+            </button>
+          </div>
+        )}
       </div>
 
       <fieldset className="min-w-0 space-y-2">
@@ -546,6 +614,7 @@ export function RandomizationWorkspace({
           <MetadataStage
             mode={mode}
             workspace={workspace}
+            apply={apply}
             exploration={exploration}
             onChange={(fields) =>
               setExploration((current) => ({ ...current, ...fields }))
@@ -613,6 +682,13 @@ export function RandomizationWorkspace({
               ? { status: "current" }
               : { status: "stale", reasons: ["inputs-changed"] };
           }}
+          onVerifyArtifact={({ name, content }) => {
+            setExternalArtifact((prev) => ({
+              name,
+              content,
+              token: (prev?.token ?? 0) + 1,
+            }));
+          }}
         />
       </section>
 
@@ -624,7 +700,7 @@ export function RandomizationWorkspace({
         <h4 id="randomization-verify" className="font-semibold">
           Verify an artifact
         </h4>
-        <VerificationPanel />
+        <VerificationPanel externalArtifact={externalArtifact} />
       </section>
 
       <div className="flex flex-wrap gap-2">
@@ -726,11 +802,13 @@ function NoticeStage({
 function MetadataStage({
   mode,
   workspace,
+  apply,
   exploration,
   onChange,
 }: {
   readonly mode: "plan" | "exploration";
   readonly workspace: StudyWorkspace;
+  readonly apply: Apply;
   readonly exploration: Exploration;
   readonly onChange: (fields: Partial<Exploration>) => void;
 }) {
@@ -755,29 +833,60 @@ function MetadataStage({
       </div>
     );
   }
-  const meta = studyMetadata(workspace);
-  const rows: [string, string][] = [
-    ["Protocol ID", meta.protocolId],
-    ["Study name", meta.studyName],
-    ["Phase", meta.phase],
-  ];
+  const projected = projectStudyMetadata(workspace);
+  const currentPhaseCode = projected.phase?.code ?? "";
+  const hasCustomPhase =
+    Boolean(currentPhaseCode) &&
+    !STUDY_PHASE_TERMS.some((term) => term.code === currentPhaseCode);
+
   return (
     <div className="space-y-3 text-sm">
       <p className="text-slate-400">
-        These come from the study itself. Change them in the study, not here.
+        Edits here update the USDM study workspace directly, sync with the
+        governance header and exported CSV headers, and support Undo and Redo.
       </p>
-      <dl className="grid gap-2 @md:grid-cols-3">
-        {rows.map(([label, value]) => (
-          <div key={label} className="min-w-0">
-            <dt className="text-slate-400">{label}</dt>
-            <dd className="break-words">
-              {value || (
-                <span className="text-amber-200">The study does not say.</span>
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="grid gap-3 @md:grid-cols-3">
+        <CommitField
+          key={`meta-protocol:${workspace.revision.id}:${projected.protocolId}`}
+          label="Protocol ID"
+          value={projected.protocolId}
+          onCommit={(nextProtocolId) => {
+            if (nextProtocolId.trim() === projected.protocolId) return;
+            apply((w) => updateStudyProtocolId(w, nextProtocolId));
+          }}
+        />
+        <CommitField
+          key={`meta-name:${workspace.revision.id}:${projected.studyName}`}
+          label="Study name"
+          value={projected.studyName}
+          onCommit={(nextName) => {
+            const trimmed = nextName.trim();
+            if (!trimmed || trimmed === projected.studyName) return;
+            apply((w) => updateStudyName(w, trimmed));
+          }}
+        />
+        <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+          Phase
+          <select
+            className={FIELD}
+            value={currentPhaseCode}
+            onChange={(event) => {
+              const nextCode = event.target.value || null;
+              apply((w) => updateStudyPhase(w, nextCode));
+            }}
+          >
+            <option value="">Unspecified</option>
+            {hasCustomPhase && projected.phase && (
+              <option value={currentPhaseCode}>{projected.phase.decode}</option>
+            )}
+            {STUDY_PHASE_TERMS.map((term) => (
+              <option key={term.code} value={term.code}>
+                {term.decode}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }

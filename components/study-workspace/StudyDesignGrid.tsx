@@ -46,7 +46,6 @@ import { DEMO_STUDY_ID } from "@/lib/clinical-study-context";
 import { downloadFile } from "@/lib/download";
 import {
   StudyConflictModal,
-  StudyRepositoryBar,
   type StudyConflictPromptState,
 } from "@/components/clinical/StudyRepositoryBar";
 import type { StudyRepositoryClient } from "@/components/clinical/study-repository-client";
@@ -60,6 +59,7 @@ import {
   type StudyWorkspaceDraftRecord,
 } from "./randomization-draft-storage";
 import { InterventionsPanel } from "./InterventionsPanel";
+import { StudyWorkspaceBar } from "./StudyWorkspaceBar";
 import { useStudyWorkspaceDraft } from "./useStudyWorkspaceDraft";
 import { TrialSchemaFigure } from "./TrialSchemaFigure";
 import { RandomizationWorkspace } from "@/components/randomization/RandomizationWorkspace";
@@ -482,55 +482,28 @@ export function StudyStudioShell({
 
   return (
     <div className="@container space-y-6">
-      <StudyRepositoryBar
+      <StudyWorkspaceBar
         repository={repository}
-        currentStudyId={session.studyId}
-        currentRevisionId={session.workspace.revision.id}
-        showStudySelect={false}
-        onSelectStudy={(record) => loadRecordIntoSession(record)}
+        studyId={session.studyId}
+        source={source}
+        selectOptions={selectOptions}
+        workspace={session.workspace}
+        canUndo={session.history.undo.length > 0}
+        canRedo={session.history.redo.length > 0}
+        onOpenSource={open}
+        onSelectStudy={(record, announceNote) =>
+          loadRecordIntoSession(record, announceNote)
+        }
         onReloadLatest={(record) =>
           loadRecordIntoSession(
             record,
             `Reloaded ${record.workspace.usdm.study.name} at ${record.workspace.revision.id}.`
           )
         }
+        onApplyEdit={apply}
+        onUndo={undo}
+        onRedo={redo}
       />
-
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-          Study
-          <select
-            className={FIELD}
-            value={source}
-            onChange={(event) => open(event.target.value)}
-          >
-            {selectOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className={BUTTON}
-          onClick={undo}
-          disabled={session.history.undo.length === 0}
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          className={BUTTON}
-          onClick={redo}
-          disabled={session.history.redo.length === 0}
-        >
-          Redo
-        </button>
-        <p className={`${MONO} min-w-0 text-xs text-slate-400`}>
-          Revision {session.workspace.revision.id}
-        </p>
-      </div>
 
       {offer && (
         <DraftOffer record={offer} onRestore={restore} onDiscard={discard} />

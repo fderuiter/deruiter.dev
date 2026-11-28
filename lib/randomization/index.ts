@@ -218,3 +218,15 @@ export type {
   VerificationRowField,
   VerifyArtifactOptions,
 } from "./internal/verification/verify-artifact";
+export {
+  TEXT_RANDOMIZATION_EXPORT_KINDS,
+  serializeRandomizationExport,
+} from "./internal/disclosure/exports";
+export type {
+  RandomizationScheduleManifestCounts,
+  RandomizationStudyMetadata,
+  SerializeRandomizationExportInput,
+  SerializeRandomizationExportResult,
+  SerializedRandomizationExport,
+  TextRandomizationExportKind,
+} from "./internal/disclosure/exports";
